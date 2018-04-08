@@ -1,15 +1,18 @@
+:: Description: xrun
+:: Usage: xrun C:\path\project.txt [group]
+:: Note: Xrun requires a project file. The group parameter is normally a letter a-t but can be nothing. If noting all groups are run.
  @echo off
 rem
 echo %0 %1 %2
 setlocal enabledelayedexpansion
 
 :main
+:: Description: Main Loop, does setup and gets variables then runs group loops.
 set projectfile=%1
 set projectpath=%~dp1
 set projectpath=%projectpath:~0,-1%
 set group=%2
 call :setup
-call :projectvar
 for %%g in (%taskgroup%) do (
   if defined group (
       if "%group%" == "%%g" call :taskgroup %%g
@@ -21,12 +24,17 @@ if defined pauseatend pause
 goto :eof
 
 :taskgroup
+:: Description: Loop that triggers each task in the group.
+:: Usage: call :taskgroup group
 set group=%~1
 set taskend=!task%~1count!
 FOR /L %%c IN (1,1,%taskend%) DO call :task %%c
 goto :eof
 
 :task
+:: Description: This tests various variables and starts the task if appropriate.
+:: Usage: call :task task
+:: Note: The task variable is an interger number, in the range 1-20 but can be set higher.
   if defined skiptasks goto :eof
   set task=!task%group%%~1!
   set task=%task%
@@ -43,35 +51,35 @@ goto :eof
 
 :variableslist
 :: Description: Handles variables list supplied in a file.
-:: Required parameters:
-:: list - a filename with name=value on each line of the file
+:: Usage: call :variableslist list
   set list=%~1
   FOR /F "eol=[ delims=; tokens=1,2" %%s IN (%list%) DO set %%s
 goto :eof
 
 :setup
+:: Description: Sets up the variables and does some checking.
+:: Usage: call :setup
 set /A count=0
 call :variableslist "%cd%\setup\xrun.ini"
+  call :variableslist "%projectfile%"
+  if not exist "%ProgramFiles%\java" (
+    echo is java installed? 
+    pause 
+    exit
+    )
 if not exist "%saxon%" (
   echo Panic! Saxon9he.jar not found. 
   echo This program will exit now! 
   Pause 
   exit
   )
-goto :eof
-
-:projectvar
-  call :variableslist "%projectfile%"
-
-  if not exist "%ProgramFiles%\java" (
-    echo is java installed? 
-    pause 
-    exit
-    )
   call :xslt variable2xslt.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%'"
 goto :eof
 
+
 :xslt
+:: Description: Runs Java with saxon to process XSLT transformations.
+:: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
   call :inccount %count%
   set script=%scripts%\%~1
   call :infile "%~2"
@@ -185,7 +193,7 @@ goto :eof
 :command
 :: Description: A way of passing any commnand from a tasklist. It does not use infile and outfile.
 :: Usage: call :usercommand "copy /y 'c:\patha\file.txt' 'c:\pathb\file.txt'" ["path to run  command in"   "output file to test for"]
-:: Limitations: When command line needs single quote.
+:: Note: Single quotes get converted to double quotes before the command is used.
 call :inccount
 set curcommand=%~1
 set commandpath=%~2
@@ -291,6 +299,7 @@ FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO call :%action% "%%s
 goto :eof
 
 :start
+:: Description: Start a program but don't wait for it.
   call :var p1 %~1
   call :var p2 %~2
   set p3=%~3

@@ -84,6 +84,7 @@
             <xsl:variable name="varname" select="tokenize($line,'=')[1]"/>
             <xsl:variable name="vardata" select="substring-after($line,'=')"/>
             <xsl:choose>
+                  <xsl:when test="matches($varname,'^task')"/>
                   <xsl:when test="matches($varname,'^\[.*$')">
                         <!-- matches ini section -->
                         <xsl:element name="xsl:variable">
@@ -98,81 +99,6 @@
                         </xsl:element>
                   </xsl:when>
                   <xsl:otherwise>
-                        <!-- matches name=value line -->
-                        <!--<xsl:element name="xsl:variable">
-                              <xsl:attribute name="name">
-                                    <xsl:value-of select="varname"/>
-                              </xsl:attribute>
-                              <xsl:attribute name="select">
-                                    <xsl:text>'</xsl:text>
-                                    <xsl:value-of select="$vardata"/>
-                                    <xsl:text>'</xsl:text>
-                              </xsl:attribute>
-                        </xsl:element> -->
-                        <xsl:choose>
-                              <xsl:when test="matches($varname,'_list$')">
-                                    <xsl:variable name="newname" select="replace($varname,'_list','')"/>
-                                    <xsl:element name="xsl:variable">
-                                          <xsl:attribute name="name">
-                                                <xsl:value-of select="$newname"/>
-                                          </xsl:attribute>
-                                          <xsl:attribute name="select">
-                                                <xsl:value-of select="concat('tokenize($',$varname,',',$apos,'\s+',$apos,')')"/>
-                                          </xsl:attribute>
-                                    </xsl:element>
-                              </xsl:when>
-                              <xsl:when test="matches($varname,'_file-list$')">
-                                    <!-- adds a tokenized list from a file. Good for when the list is too long for batch line -->
-                                    <xsl:element name="xsl:variable">
-                                          <xsl:attribute name="name">
-                                                <xsl:value-of select="replace($varname,'_file-list','')"/>
-                                          </xsl:attribute>
-                                          <xsl:attribute name="select">
-                                                <xsl:text>f:file2lines($</xsl:text>
-                                                <xsl:value-of select="$varname"/>
-                                                <xsl:text>)</xsl:text>
-                                          </xsl:attribute>
-                                    </xsl:element>
-                              </xsl:when>
-                              <xsl:when test="matches($varname,'_semicolon-list$')">
-                                    <!-- semicolon delimited list -->
-                                    <xsl:element name="xsl:variable">
-                                          <xsl:attribute name="name">
-                                                <xsl:value-of select="replace($varname,'_semicolon-list','')"/>
-                                          </xsl:attribute>
-                                          <xsl:attribute name="select">
-                                                <xsl:value-of select="concat('tokenize($',$varname,',',$apos,';',$apos,')')"/>
-                                          </xsl:attribute>
-                                    </xsl:element>
-                                    <!--  now test if there are = in the list and make a key list -->
-                                    <xsl:choose>
-                                          <xsl:when test="unparsed-text-available($projecturi)">
-                                                <xsl:variable name="projecttask" select="tokenize(unparsed-text($projecturi),'\r?\n')"/>
-                                                <xsl:for-each select="$projecttask">
-                                                      <!-- copy the root folder files pub.cmd and local_var.cmd -->
-                                                      <xsl:call-template name="parseline">
-                                                            <xsl:with-param name="line" select="."/>
-                                                            <xsl:with-param name="curpos" select="$curpos"/>
-                                                      </xsl:call-template>
-                                                </xsl:for-each>
-                                          </xsl:when>
-                                          <xsl:otherwise>
-                                                <xsl:text disable-output-escaping="yes">&lt;!-- </xsl:text>
-                                                <!-- <xsl:value-of select="$command"/> -->
-                                                <xsl:text> </xsl:text>
-                                                <xsl:value-of select="$varname"/>
-                                                <xsl:text disable-output-escaping="yes"> not found --&gt;</xsl:text>
-                                          </xsl:otherwise>
-                                    </xsl:choose>
-                              </xsl:when>
-                              <xsl:otherwise>
-                                    <!-- variable line
-                                    <xsl:element name="xsl:variable">
-                                          <xsl:attribute name="name">
-                                                <xsl:value-of select="$label"/>
-                                          </xsl:attribute>
-                                          <xsl:value-of select="$comment"/>
-                                    </xsl:element> -->
                                     <xsl:text>&#10;</xsl:text>
                                     <xsl:call-template name="writeparam">
                                           <xsl:with-param name="varname" select="$varname"/>
@@ -185,60 +111,20 @@
                                                 </xsl:choose>
                                           </xsl:with-param>
                                           <xsl:with-param name="vardata">
-                                                <xsl:choose>
-                                                      <!--<xsl:when test="matches($vardata,'%semicolon%')">
-                                                            <xsl:text>';'</xsl:text>
-                                                      </xsl:when> -->
-                                                      <xsl:when test="matches($vardata,'^&#34;?%[\w\d\-_]+:.*=.*%&#34;?$')">
-                                                            <!-- Matches batch variable with a find and replace structure -->
-                                                            <xsl:variable name="re" select="'^&#34;?%([\w\d\-_]+):(.*)=(.*)%&#34;?$'"/>
-                                                            <xsl:text>replace(</xsl:text>
-                                                            <xsl:value-of select="replace($vardata,$re,'\$$1')"/>
-                                                            <xsl:text>,'</xsl:text>
-                                                            <xsl:value-of select="replace($vardata,$re,'$2')"/>
-                                                            <xsl:text>','</xsl:text>
-                                                            <xsl:value-of select="replace($vardata,$re,'$3')"/>
-                                                            <xsl:text>')</xsl:text>
-                                                      </xsl:when>
-                                                      <xsl:when test="matches($vardata,'%[\w\d\-_]+%')">
-                                                            <!-- variable -->
-                                                            <xsl:text>concat(</xsl:text>
-                                                            <xsl:analyze-string select="replace($vardata,'&#34;','')" regex="%[\w\d\-_]+%">
-                                                                  <!-- match variable string -->
-                                                                  <xsl:matching-substring>
-                                                                        <xsl:if test="position() gt 1">
-                                                                              <xsl:text>,</xsl:text>
-                                                                        </xsl:if>
-                                                                        <xsl:text>$</xsl:text>
-                                                                        <xsl:value-of select="replace(.,'%','')"/>
-                                                                  </xsl:matching-substring>
-                                                                  <xsl:non-matching-substring>
-                                                                        <xsl:choose>
-                                                                              <xsl:when test="position() = 1">
+                                    <xsl:value-of select="f:handlevar($vardata)"/>
+                              </xsl:with-param>
+                        </xsl:call-template>
+                        <!-- matches name=value line -->
+                        <!--<xsl:element name="xsl:variable">
+                              <xsl:attribute name="name">
+                                    <xsl:value-of select="varname"/>
+                              </xsl:attribute>
+                              <xsl:attribute name="select">
                                                                                     <xsl:text>'</xsl:text>
-                                                                              </xsl:when>
-                                                                              <xsl:otherwise>
-                                                                                    <xsl:text>,'</xsl:text>
-                                                                              </xsl:otherwise>
-                                                                        </xsl:choose>
-                                                                        <xsl:value-of select="."/>
+                                    <xsl:value-of select="$vardata"/>
                                                                         <xsl:text>'</xsl:text>
-                                                                  </xsl:non-matching-substring>
-                                                            </xsl:analyze-string>
-                                                            <!-- <xsl:if test="$onevar = 'onevar'"> -->
-                                                            <!-- This is incase there is only one variable passed to another variable, rare but possible -->
-                                                            <!-- <xsl:text>,''</xsl:text> -->
-                                                            <!-- </xsl:if> -->
-                                                            <xsl:text>)</xsl:text>
-                                                      </xsl:when>
-                                                      <xsl:otherwise>
-                                                            <xsl:value-of select="replace($vardata,'&#34;','')"/>
-                                                      </xsl:otherwise>
-                                                </xsl:choose>
-                                          </xsl:with-param>
-                                    </xsl:call-template>
-                              </xsl:otherwise>
-                        </xsl:choose>
+                              </xsl:attribute>
+                        </xsl:element> -->
                   </xsl:otherwise>
             </xsl:choose>
       </xsl:template>
@@ -350,4 +236,55 @@
                   </xsl:if>
             </xsl:if>
       </xsl:template>
+      <xsl:function name="f:handlevar">
+            <xsl:param name="string"/>
+            <!-- parse the data part for variables -->
+            <xsl:choose>
+                  <xsl:when test="matches($string,'^&#34;?%[\w\d\-_]+:.*=.*%&#34;?$')">
+                        <!-- Matches batch variable with a find and replace structure %name:find=replace% -->
+                        <xsl:variable name="re" select="'^&#34;?%([\w\d\-_]+):(.*)=(.*)%&#34;?$'"/>
+                        <xsl:text>replace(</xsl:text>
+                        <xsl:value-of select="replace($string,$re,'\$$1')"/>
+                        <xsl:text>,'</xsl:text>
+                        <xsl:value-of select="replace($string,$re,'$2')"/>
+                        <xsl:text>','</xsl:text>
+                        <xsl:value-of select="replace($string,$re,'$3')"/>
+                        <xsl:text>')</xsl:text>
+                  </xsl:when>
+                  <xsl:when test="matches($string,'%[\w\d\-_]+%')">
+                        <!-- variable % name1-more% -->
+                        <xsl:text>concat(</xsl:text>
+                        <xsl:analyze-string select="replace($string,'&#34;','')" regex="%[\w\d\-_]+%">
+                              <!-- match variable string -->
+                              <xsl:matching-substring>
+                                    <xsl:if test="position() gt 1">
+                                          <xsl:text>,</xsl:text>
+                                    </xsl:if>
+                                    <xsl:text>$</xsl:text>
+                                    <xsl:value-of select="replace(.,'%','')"/>
+                              </xsl:matching-substring>
+                              <xsl:non-matching-substring>
+                                    <xsl:choose>
+                                          <xsl:when test="position() = 1">
+                                                <xsl:text>'</xsl:text>
+                                          </xsl:when>
+                                          <xsl:otherwise>
+                                                <xsl:text>,'</xsl:text>
+                                          </xsl:otherwise>
+                                    </xsl:choose>
+                                    <xsl:value-of select="."/>
+                                    <xsl:text>'</xsl:text>
+                              </xsl:non-matching-substring>
+                        </xsl:analyze-string>
+                        <!-- <xsl:if test="$onevar = 'onevar'"> -->
+                        <!-- This is incase there is only one variable passed to another variable, rare but possible -->
+                        <!-- <xsl:text>,''</xsl:text> -->
+                        <!-- </xsl:if> -->
+                        <xsl:text>)</xsl:text>
+                  </xsl:when>
+                  <xsl:otherwise>
+                        <xsl:value-of select="replace($string,'&#34;','')"/>
+                  </xsl:otherwise>
+            </xsl:choose>
+      </xsl:function>
 </xsl:stylesheet>
