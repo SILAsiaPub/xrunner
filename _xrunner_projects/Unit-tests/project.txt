@@ -1,6 +1,7 @@
 [variables]
 unittest=on
 funcstart=
+info1=on
 utgroup=info1
 funcstarttest0=unittest
 funcstarttext=test
