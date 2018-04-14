@@ -12,7 +12,10 @@ iframe {margin: 6pt 0 0 0;}
 .label {padding-top:10pt}
 .sample {width:154px;height:123px;}
 .floatright {float:right;clear:both}
-#buttona, #buttonb, #buttonc, #buttond, #buttone, #buttonf, #buttong, #buttonh, #buttoni, #buttonj {display:none}
+#buttona, #buttonb, #buttonc, #buttond, #buttone, #buttonf, #buttong, #buttonh, #buttoni, #buttonj,
+#buttonk, #buttonl, #buttonm, #buttonn, #buttono, #buttonp, #buttonq, #buttonr, #buttons, #buttont
+
+ {display:none}
 
 
 /* Style the tab */
