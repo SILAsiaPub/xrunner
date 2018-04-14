@@ -230,6 +230,7 @@ Function SelectFolder( myStartFolder )
     Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
     editProject()
     document.getElementById("projecttxt").src = projectTxt
+    document.getElementById("projinfoframe").src = projectInfo
     ' Standard housekeeping
     Set objFolder = Nothing
     Set objshell  = Nothing

@@ -13,13 +13,13 @@ if not defined infolevel set infolevel=0
 call :setinfolevel %infolevel%
 if defined %funcstart%%utgroup% echo Cmd: %0 "%1" %2 %3 %4 %5 
 setlocal enabledelayedexpansion
-call :main
-goto :eof
+goto :main
+
 
 :main
 :: Description: Main Loop, does setup and gets variables then runs group loops.
 :: Depends on: setup, taskgroup
-  if defined %funcstart% echo %funcstarttext% %0
+  if defined funccore echo %funcstarttext% %0
 call :setup
 for %%g in (%taskgroup%) do (
   if defined group (
@@ -35,7 +35,7 @@ goto :eof
 :: Description: Loop that triggers each task in the group.
 :: Usage: call :taskgroup group
 :: Requires: task
-  if defined %funcstart%%utgroup% echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined funccore echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 set group=%~1
 set taskend=!task%~1count!
 FOR /L %%c IN (1,1,%taskend%) DO call :task %%c
@@ -48,7 +48,7 @@ goto :eof
 :: Note: The task variable is an interger number, in the range 1-20 but can be set higher.
 :: Depends on: 
   if not defined task%group%%~1 goto :eof
-  if defined %funcstart%%utgroup% echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined funccore echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   if defined skiptasks goto :eof
   set task=!task%group%%~1!
   set task=%task%
@@ -67,7 +67,7 @@ goto :eof
 :variableslist
 :: Description: Handles variables list supplied in a file.
 :: Usage: call :variableslist list
-  if defined %funcstart%%utgroup% echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined funccore echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set list=%~1
   FOR /F "eol=[ delims=; tokens=1,2" %%s IN (%list%) DO (
     set data=%%s
@@ -80,28 +80,29 @@ goto :eof
 :: Description: Sets up the variables and does some checking.
 :: Usage: call :setup
 :: Depends on: variableslist, xslt
-  if defined %funcstart%%utgroup% echo %funcstarttext% %0 "%~1" "%~2" "%~3"
-set /A count=0
-call :variableslist "%cd%\setup\xrun.ini"
+  if defined funccore echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set /A count=0
+  call :variableslist "%cd%\setup\xrun.ini"
   for %%l in (%taskgroup%) do set task%%lcount=%defaulttaskcount%
   set maxsubcount=%defaulttaskcount%
   call :variableslist "%projectfile%"
   call :setinfolevel %infolevel%
   if not defined noxslt (
     rem this is run unless xslt (including Java and Saxon) is not needed
-  if not exist "%ProgramFiles%\java" (
-      echo Error: is java installed? 
-    pause 
+    if not exist "%ProgramFiles%\java" (
+        echo Error: is java installed? 
+      pause 
+      exit
+      )
+    if not exist "%saxon%" (
+    echo Panic! Saxon9he.jar not found. 
+    echo This program will exit now! 
+        pause 
     exit
     )
-if not exist "%saxon%" (
-  echo Panic! Saxon9he.jar not found. 
-  echo This program will exit now! 
-      pause 
-  exit
+    call :xslt variable2xslt.xslt blank.xml scripts\project.xslt "projectpath='%projectpath%'"
+    if exist "scripts\project.xslt" move /Y "scripts\project.xslt" "%scripts%"
   )
-  call :xslt variable2xslt.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%'"
-      )
   if defined info4 echo %funcendtext% %0
 goto :eof
 
@@ -439,16 +440,18 @@ goto :eof
   set val5=%~5
   set val6=%~6
   set val7=%~7
-  rem set val2=%val2:'="%
-  
   if defined val7 (
   call %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
-  )else if defined val6 (
-  call %val1% "%val3%" "%val4%" "%val5%" 
-  ) else if defined val5 (
-  call %val1% "%val3%" "%val4%"
   ) else (
-  call %val1% "%val3%"
+    if defined val6 (
+    call %val1% "%val3%" "%val4%" "%val5%" 
+    ) else (
+      if defined val5 (
+      call %val1% "%val3%" "%val4%"
+      ) else (
+      call %val1% "%val3%"
+      )
+    )
   )
   set /A tcount+=1
   echo test input1: %val3%
