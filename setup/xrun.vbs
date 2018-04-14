@@ -3,14 +3,15 @@ Option Explicit
 
 '         <!--define variables-->
 Dim strPath, dquote, WScript, shell, objShell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt 
-Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw 
+Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, boxlist 
 tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t" )
+boxlist = Array("Checkbox1","Checkbox2","Checkbox3","Checkbox4","Checkbox5")
 zero = 0
 zero = CInt(zero)
 xrundata = "setup\"
 xrunini = "setup\xrun.ini"
 projPath =  ReadIni(xrunini,"setup","projecthome")
-texteditor =  ReadIni(xrunini,"setup","editor")
+texteditor =  ReadIni(xrunini,"tools","editor")
 '         <!--set some values-->
 projIni = "blank.txt"
 
@@ -78,6 +79,107 @@ Function ReadIni( myFilePath, mySection, myKey )
     End If
 End Function
 
+Sub WriteIni( myFilePath, mySection, myKey, myValue )
+    ' This subroutine writes a value to an INI file
+    ' Written by Keith Lacelle
+    ' Modified by Denis St-Pierre, Johan Pol and Rob van der Woude
+    Const ForReading   = 1
+    Const ForWriting   = 2
+    Const ForAppending = 8
+    Dim blnInSection, blnKeyExists, blnSectionExists, blnWritten
+    Dim intEqualPos
+    Dim objFSO, objNewIni, objOrgIni, wshShell
+    Dim strFilePath, strFolderPath, strKey, strLeftString
+    Dim strLine, strSection, strTempDir, strTempFile, strValue
+    strFilePath = Trim( myFilePath )
+    strSection  = Trim( mySection )
+    strKey      = Trim( myKey )
+    strValue    = Trim( myValue )
+    Set objFSO   = CreateObject( "Scripting.FileSystemObject" )
+    Set wshShell = CreateObject( "WScript.Shell" )
+    strTempDir  = wshShell.ExpandEnvironmentStrings( "%TEMP%" )
+    strTempFile = objFSO.BuildPath( strTempDir, objFSO.GetTempName )
+    Set objOrgIni = objFSO.OpenTextFile( strFilePath, ForReading, True )
+    Set objNewIni = objFSO.CreateTextFile( strTempFile, False, False )
+    blnInSection     = False
+    blnSectionExists = False
+    ' Check if the specified key already exists
+    blnKeyExists     = ( ReadIni( strFilePath, strSection, strKey ) <> "" )
+    blnWritten       = False
+    ' Check if path to INI file exists, quit if not
+    strFolderPath = Mid( strFilePath, 1, InStrRev( strFilePath, "\" ) )
+    If Not objFSO.FolderExists ( strFolderPath ) Then
+        WScript.Echo "Error: WriteIni failed, folder path (" _
+                   & strFolderPath & ") to ini file " _
+                   & strFilePath & " not found!"
+        Set objOrgIni = Nothing
+        Set objNewIni = Nothing
+        Set objFSO    = Nothing
+        WScript.Quit 1
+    End If
+    While objOrgIni.AtEndOfStream = False
+        strLine = Trim( objOrgIni.ReadLine )
+        If blnWritten = False Then
+            If LCase( strLine ) = "[" & LCase( strSection ) & "]" Then
+                blnSectionExists = True
+                blnInSection = True
+            ElseIf InStr( strLine, "[" ) = 1 Then
+                blnInSection = False
+            End If
+        End If
+        If blnInSection Then
+            If blnKeyExists Then
+                intEqualPos = InStr( 1, strLine, "=", vbTextCompare )
+                If intEqualPos > 0 Then
+                    strLeftString = Trim( Left( strLine, intEqualPos - 1 ) )
+                    If LCase( strLeftString ) = LCase( strKey ) Then
+                        ' Only write the key if the value isn't empty
+                        ' Modification by Johan Pol
+                        If strValue <> "<DELETE_THIS_VALUE>" Then
+                            objNewIni.WriteLine strKey & "=" & strValue
+                        End If
+                        blnWritten   = True
+                        blnInSection = False
+                    End If
+                End If
+                If Not blnWritten Then
+                    objNewIni.WriteLine strLine
+                End If
+            Else
+                objNewIni.WriteLine strLine
+                    ' Only write the key if the value isn't empty
+                    ' Modification by Johan Pol
+                    If strValue <> "<DELETE_THIS_VALUE>" Then
+                        objNewIni.WriteLine strKey & "=" & strValue
+                    End If
+                blnWritten   = True
+                blnInSection = False
+            End If
+        Else
+            objNewIni.WriteLine strLine
+        End If
+    Wend
+    If blnSectionExists = False Then ' section doesn't exist
+        objNewIni.WriteLine
+        objNewIni.WriteLine "[" & strSection & "]"
+            ' Only write the key if the value isn't empty
+            ' Modification by Johan Pol
+            If strValue <> "<DELETE_THIS_VALUE>" Then
+                objNewIni.WriteLine strKey & "=" & strValue
+            End If
+    End If
+    objOrgIni.Close
+    objNewIni.Close
+    ' Delete old INI file
+    objFSO.DeleteFile strFilePath, True
+    ' Rename new INI file
+    objFSO.MoveFile strTempFile, strFilePath
+    Set objOrgIni = Nothing
+    Set objNewIni = Nothing
+    Set objFSO    = Nothing
+    Set wshShell  = Nothing
+End Sub
+
 Function SelectFolder( myStartFolder )
 ' This function opens a "Select Folder" dialog and will
 ' return the fully qualified path of the selected folder
@@ -91,7 +193,6 @@ Function SelectFolder( myStartFolder )
 ' http://www.robvanderwoude.com
     ' Standard housekeeping
     Dim objFolder, objItem, objShell, usea, useb
-    
     ' Custom error handling
     On Error Resume Next
     SelectFolder = vbNull
@@ -103,6 +204,9 @@ Function SelectFolder( myStartFolder )
     ShowSelectedFolder.Value = SelectFolder
     projectTxt = SelectFolder & "\project.txt"
     projectInfo = SelectFolder & "\project-info.txt"
+    'For x = 0 To 19
+    '  buttonSet(tskgrp(x))
+    'Next
     buttonSet(tskgrp(0))
     buttonSet(tskgrp(1))
     buttonSet(tskgrp(2))
@@ -138,24 +242,56 @@ Function RunCmd( bat, param )
     objShell.run(cmdline)
 End Function
 
-Sub RunScript(groupa)
+Sub xrun(group)
+    Dim x, level, pauseatend
+    pauseatend = ""
+    For x = 0 To 5
+      if document.getElementById("infoid" & x).checked Then
+        level = document.getElementById("infoid" & x).value
+      End If
+    Next
+    If document.getElementById("pauseatend").checked  Then
+       pauseatend = "pause"
+    End If   
+   call RunScript("xrun",projectTxt,group,level,pauseatend)
+End Sub
+
+
+Sub RunScript(script,var1,var2,var3,var4)
     'writeProjIni projIni,"variables",styleout
-    cmdline = "xrun.cmd " & projectTxt & " " & groupa
+    dim infopar(5), x
+    infopar(0) = chr(34) & script & chr(34)
+    infopar(1) = " " & chr(34) & var1 & chr(34)
+    infopar(2) = " " & var2
+    infopar(3) = " " & var3
+    infopar(4) = " " & var4
+    cmdline = infopar(0) & infopar(1) & infopar(2) & infopar(3) & infopar(4)
     objShell.run(cmdline)
+    document.getElementById("lastcmd").InnerText = "Last commandline: " & cmdline
     'CmdPrompt(cmdline)
 End Sub
 
-Sub editfile(file)
+Sub editFile(file)
     cmdline = texteditor & " " & file
     objShell.run(cmdline)
 End Sub
 
 Sub buttonSet(group)
-    If len(ReadIni(projectTxt,"tasks","task" & group & "1")) > zero Then
-        document.getElementById("button" & group).style.display = "block"
         If len(ReadIni(projectTxt,"tasks","label" & group)) > zero Then
-            document.getElementById("button" & group).InnerText = ReadIni(projectTxt,"tasks","label" & group)
+        document.getElementById("grouplabel" & group).style.display = "block"
+        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,"tasks","label" & group)
         End If
+    If len(ReadIni(projectTxt,"tasks","button" & group)) > zero Then
+        document.getElementById("button" & group).style.display = "block"
+        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,"tasks","button" & group)
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 1)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 2)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 3)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 4)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
     End If
 End Sub
 
@@ -179,10 +315,50 @@ Sub editProject()
   If goFS.FileExists(projectTxt) Then
      document.all.DataArea.value = goFS.OpenTextFile(projectTxt).ReadAll()
   Else
-     document.all.DataArea.value = projectTxt & " created"
+     document.all.DataArea.value = "[variables]"
   End If
 End Sub
 
 Sub SaveProject()
   goFS.CreateTextFile(projectTxt).Write document.all.DataArea.value
+End Sub
+
+Sub toggleIni(ini,key,value,eid)
+  If Document.GetElementById(eid).Checked = False Then
+    call WriteIni( ini, key,value , "" )
+  Else
+    call WriteIni( ini, key,value , "on" )
+  End If
+End Sub
+
+Sub  SetRadioFromIni(ini, section,key,idname,last)
+  dim x, infolevel
+  infolevel = ReadIni(xrunini,"setup","infolevel")
+  For x = 0 To Cint(last)
+    If infolevel = x then
+      Document.GetElementById(idname & x ).click 
+     ''     Else
+     ' Document.GetElementById(idname & x ).removeAttribute("checked")
+    End If
+  Next
+End Sub
+
+Sub  SetCboxByIdNumbSetFromIni(ini, section,key,idname,last)
+  dim x
+  For x = 0 To Cint(last)
+    call SetCboxByIdFromIni(ini, section,key & x,idname)
+  Next
+End Sub
+
+Sub SetCboxByIdFromIni(ini, section,key,idname)
+    If ReadIni(ini,section,key) = " " then
+      Document.GetElementById(idname ).Checked = False
+    Else
+      Document.GetElementById(idname ).Checked = True
+    End If
+End Sub
+
+Sub presets()
+  call SetRadioFromIni(xrunini, "setup","infolevel","infoid",5)
+  call SetCboxByIdFromIni(xrunini, "setup","pauseatend","pauseatend")
 End Sub
