@@ -1,10 +1,5 @@
 [variables]
-unittest=on
-funcstart=
-info1=on
-utgroup=info1
-funcstarttest0=unittest
-funcstarttext=test
+
 seedpath1=D:\All-SIL-Publishing\_xrunner-projects\Var-testing
 seedpath2=D:\All-SIL-Publishing\_xrunner-projects
 ptestpath1=%seedpath1%
@@ -21,6 +16,7 @@ expectpath2=D:\All-SIL-Publishing\_xrunner-projects
 expectfile1=D:\All-SIL-Publishing\_xrunner-projects\Var-testing\project.txt
 expectfile2=D:\All-SIL-Publishing\_xrunner-projects\project.txt
 
+unittest=
 noxslt=on
 tcount=0
 [tasks]
@@ -50,10 +46,10 @@ taskc2=:test :var "%expectfile1%" val "%ptestfile1%" "%% x 2 var in project.txt"
 taskc4=:test :var "%expectfile1%" val "!ptestfile1!" "%% + ^^! var in project.txt" 
 taskc6=:test :var "%expectpath1%" val "%etestpath1%" "%% x 2 var in project.txt"         
 taskc8=:test :var "%expectpath1%" val "!etestpath1!" "exclamation x 2 var in project.txt"
-#taskc12=:test :var 
-#taskc14=:test :var 
-#taskc16=:test :var 
-#taskc18=:test :var 
+[taskc12=:test :var 
+[taskc14=:test :var 
+[taskc16=:test :var 
+[taskc18=:test :var 
 
 buttond=check :command2var
 taskd1=:test :command2var "C:\Program Files\Java\jdk1.8.0_101\bin\java.exe" "where java" javapath "Java test"
@@ -63,6 +59,6 @@ taskd8=:test :command2var "hello world" "echo hello world" hello "echo test"
 
 buttone=check :v2
 taske2=:test :v2 "%expectfile1%" val "%ptestfile1%" "%% x 2 var in project.txt"   
-taske4=:test :v2 "%expectfile1%" val "!ptestfile1!" "%% + ^^! var in project.txt" 
+taske4=:test :v2 "%expectfile1%" val "!ptestfile1!" "%% + !excl! var in project.txt" 
 taske6=:test :v2 "%expectpath1%" val "%etestpath1%" "%% x 2 var in project.txt"         
 taske8=:test :v2 "%expectpath1%" val "!etestpath1!" "exclamation x 2 var in project.txt"
