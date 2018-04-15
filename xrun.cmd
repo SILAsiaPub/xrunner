@@ -1,9 +1,15 @@
 :: Description: xrun
 :: Usage: xrun C:\path\project.txt [group] [infolevel] [pauseatend]
-:: Note: Xrun requires a project file. The group parameter is normally a letter a-t but can be nothing. If noting all groups are run.
+:: Note: Xrun requires a project file. The group parameter is normally a letter a-t but can be nothing. If nothing all groups are run.
  @echo off
 rem
-set projectfile=%1
+set projectfile=%1 
+if not exist "%projectfile%" (
+  rem This is to ensure there is a parameter for the project.txt file.
+  echo A valid project file must be provided. It is a required parameter.
+  echo This script will exit.
+  goto :eof
+)
 set projectpath=%~dp1
 set projectpath=%projectpath:~0,-1%
 set group=%2
