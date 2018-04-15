@@ -4,12 +4,12 @@
 @echo off
 rem 
 set projectfile=%1 
-rem if not exist "%1" (
-rem   rem This is to ensure there is a parameter for the project.txt file.
-rem   echo A valid project file must be provided. It is a required parameter.
-rem   echo This script will exit.
-rem   goto :eof
-rem )
+if not exist "%1" (
+  rem This is to ensure there is a parameter for the project.txt file.
+  echo A valid project file must be provided. It is a required parameter.
+  echo This script will exit.
+  goto :eof
+)
 set projectpath=%~dp1
 set projectpath=%projectpath:~0,-1%
 set groupin=%2
