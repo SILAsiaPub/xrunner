@@ -1,10 +1,13 @@
 ' VB Script Document
 Option Explicit
-
 '         <!--define variables-->
-Dim strPath, dquote, WScript, shell, objShell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt 
-Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, boxlist 
-tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t" )
+Dim coFSO, objShell
+Set objShell = CreateObject("Wscript.Shell")
+Set coFSO = CreateObject("Scripting.FileSystemObject")
+
+Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo 
+Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist 
+tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
 boxlist = Array("Checkbox1","Checkbox2","Checkbox3","Checkbox4","Checkbox5")
 zero = 0
 zero = CInt(zero)
@@ -12,10 +15,8 @@ xrundata = "setup\"
 xrunini = "setup\xrun.ini"
 projPath =  ReadIni(xrunini,"setup","projecthome")
 texteditor =  ReadIni(xrunini,"tools","editor")
-'         <!--set some values-->
 projIni = "blank.txt"
-
-Set objShell = CreateObject("Wscript.Shell")
+level = 0
 dquote = chr(34)
 strUserProfile = objShell.ExpandEnvironmentStrings( "%userprofile%" )
 
@@ -203,34 +204,18 @@ Function SelectFolder( myStartFolder )
     If IsObject( objfolder ) Then SelectFolder = objFolder.Self.Path
     ShowSelectedFolder.Value = SelectFolder
     projectTxt = SelectFolder & "\project.txt"
+    If coFSO.FileExists(projectTxt) Then
     projectInfo = SelectFolder & "\project-info.txt"
-    'For x = 0 To 19
-    '  buttonSet(tskgrp(x))
-    'Next
-    buttonSet(tskgrp(0))
-    buttonSet(tskgrp(1))
-    buttonSet(tskgrp(2))
-    buttonSet(tskgrp(3))
-    buttonSet(tskgrp(4))
-    buttonSet(tskgrp(5))
-    buttonSet(tskgrp(6))
-    buttonSet(tskgrp(7))
-    buttonSet(tskgrp(8))
-    buttonSet(tskgrp(9))
-    buttonSet(tskgrp(10))
-    buttonSet(tskgrp(11))
-    buttonSet(tskgrp(12))
-    buttonSet(tskgrp(13))
-    buttonSet(tskgrp(14))
-    buttonSet(tskgrp(15))
-    buttonSet(tskgrp(16))
-    buttonSet(tskgrp(17))
-    buttonSet(tskgrp(18))
-    buttonSet(tskgrp(19))
+      buttonSet2()
     Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
-    editProject()
-    document.getElementById("projecttxt").src = projectTxt
-    document.getElementById("projinfoframe").src = projectInfo
+      call editArea1(projectTxt)
+      call editArea2(projectInfo)
+    End If
+
+    'document.getElementById("projecttxt").src = projectTxt
+    'document.getElementById("infoarea").src = projectInfo
+    'document.getElementById("projinfoframe").src = projectInfo
+    'copy()
     ' Standard housekeeping
     Set objFolder = Nothing
     Set objshell  = Nothing
@@ -243,8 +228,33 @@ Function RunCmd( bat, param )
     objShell.run(cmdline)
 End Function
 
+Function buttonSet2()
+  dim x, group
+  For x = 0 To Ubound(tskgrp)
+    group = tskgrp(x)
+    'call buttonSet(tskgrp(x))
+    If len(ReadIni(projectTxt,"tasks","label" & group)) > zero Then
+        document.getElementById("grouplabel" & group).style.display = "block"
+        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,"tasks","label" & group)
+    End If
+    If len(ReadIni(projectTxt,"tasks","button" & group)) > zero Then
+        document.getElementById("button" & group).style.display = "block"
+        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,"tasks","button" & group)
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 1)) > zero Then
+      ' looks for tasks in the first 4 tasks
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 2)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 3)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 4)) > zero Then
+      document.getElementById("button" & group).style.display = "block"
+    End If
+  Next
+End Function
+
 Sub xrun(group)
-    Dim x, level, pauseatend
+    Dim x, pauseatend
     pauseatend = ""
     For x = 0 To 5
       if document.getElementById("infoid" & x).checked Then
@@ -257,12 +267,18 @@ Sub xrun(group)
    call RunScript("xrun",projectTxt,group,level,pauseatend)
 End Sub
 
+Sub copy()
+  Dim x, y
+  x = projectInfo
+  y = "setup\project-info.txt"
+  call RunScript("copy","/Y",x,y,"")
+End Sub
 
 Sub RunScript(script,var1,var2,var3,var4)
     'writeProjIni projIni,"variables",styleout
     dim infopar(5), x
     infopar(0) = chr(34) & script & chr(34)
-    infopar(1) = " " & chr(34) & var1 & chr(34)
+    infopar(1) = " " & var1
     infopar(2) = " " & var2
     infopar(3) = " " & var3
     infopar(4) = " " & var4
@@ -272,28 +288,9 @@ Sub RunScript(script,var1,var2,var3,var4)
     'CmdPrompt(cmdline)
 End Sub
 
-Sub editFile(file)
+Sub editFileExternal(file)
     cmdline = texteditor & " " & file
     objShell.run(cmdline)
-End Sub
-
-Sub buttonSet(group)
-        If len(ReadIni(projectTxt,"tasks","label" & group)) > zero Then
-        document.getElementById("grouplabel" & group).style.display = "block"
-        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,"tasks","label" & group)
-        End If
-    If len(ReadIni(projectTxt,"tasks","button" & group)) > zero Then
-        document.getElementById("button" & group).style.display = "block"
-        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,"tasks","button" & group)
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 1)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 2)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 3)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 4)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    End If
 End Sub
 
 Function OpenTab(tabid)
@@ -310,18 +307,29 @@ Function OpenTab(tabid)
 End Function
 
 'Const csFSpec = "E:\trials\SoTrials\answers\8841045\hta\29505115.txt"
-Dim goFS : Set goFS = CreateObject("Scripting.FileSystemObject")
 
-Sub editProject()
-  If goFS.FileExists(projectTxt) Then
-     document.all.DataArea.value = goFS.OpenTextFile(projectTxt).ReadAll()
+Sub editArea1(file)
+  If coFSO.FileExists(file) Then
+     'Document.getElementsByTagName(namearea)(0).value = coFSO.OpenTextFile(file).ReadAll()
+     document.all.DataArea.value = coFSO.OpenTextFile(file).ReadAll()
   Else
-     document.all.DataArea.value = "[variables]"
+     coFSO.CreateTextFile(file)
+     document.all.DataArea.value = "[]"
   End If
 End Sub
 
-Sub SaveProject()
-  goFS.CreateTextFile(projectTxt).Write document.all.DataArea.value
+Sub editArea2(file)
+  If coFSO.FileExists(file) Then
+     'Document.getElementsByTagName(namearea)(0).value = coFSO.OpenTextFile(file).ReadAll()
+     document.all.InfoArea.value = coFSO.OpenTextFile(file).ReadAll()
+  Else
+     coFSO.CreateTextFile(file)
+     document.all.InfoArea.value = "# Notes"
+  End If
+End Sub
+
+Sub SaveFile(data,filename)
+  coFSO.CreateTextFile(filename).Write document.all.data.value
 End Sub
 
 Sub toggleIni(ini,key,value,eid)
@@ -334,10 +342,14 @@ End Sub
 
 Sub  SetRadioFromIni(ini, section,key,idname,last)
   dim x, infolevel
-  infolevel = ReadIni(xrunini,"setup","infolevel")
+  infolevel = ReadIni(xrunini,section,key)
   For x = 0 To Cint(last)
     If infolevel = x then
-      Document.GetElementById(idname & x ).click 
+      inforadio.SetFocus
+      'Document.GetElementById(idname & x ).checked = True
+     '' Document.GetElementById(idname & x ).SetFocus
+     '' Document.GetElementById(idname & x ).ClickButton
+     Sys.Keys "[Down][Down]"
      ''     Else
      ' Document.GetElementById(idname & x ).removeAttribute("checked")
     End If
@@ -360,6 +372,6 @@ Sub SetCboxByIdFromIni(ini, section,key,idname)
 End Sub
 
 Sub presets()
-  call SetRadioFromIni(xrunini, "setup","infolevel","infoid",5)
+  call SetRadioFromIni(xrunini, "feedback","infolevel","infoid",5)
   call SetCboxByIdFromIni(xrunini, "setup","pauseatend","pauseatend")
 End Sub

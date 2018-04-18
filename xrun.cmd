@@ -4,7 +4,7 @@
 @echo off
 rem 
 set projectfile=%1 
-if not exist "%1" (
+if not exist %1 (
   rem This is to ensure there is a parameter for the project.txt file.
   echo A valid project file must be provided. It is a required parameter.
   echo This script will exit.
@@ -26,11 +26,11 @@ goto :main
 :: Description: Main Loop, does setup and gets variables then runs group loops.
 :: Depends on: setup, taskgroup
   if defined funcgrp5 echo %funcstarttext% %0
-call :setup
-if defined groupin call :taskgroup %groupin%
-if not defined groupin for %%g in (%taskgroup%) do call :taskgroup %%g
-if defined funcgrp5 echo %funcendtext% %0
-if defined pauseatend pause
+  call :setup
+  if defined groupin call :taskgroup %groupin%
+  if not defined groupin for %%g in (%taskgroup%) do call :taskgroup %%g
+  if defined funcgrp5 echo %funcendtext% %0
+  if defined pauseatend pause
 goto :eof
 
 :taskgroup
@@ -246,6 +246,14 @@ goto :eof
   if defined funcgrp1 echo %funcendtext% %0
 goto :eof
 
+:inc
+set /A %~1+=1
+goto :eof
+
+:dec
+set /A %~1-=1
+goto :eof
+
 :var
   if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set value=%~2
@@ -441,30 +449,72 @@ goto :eof
   set val5=%~5
   set val6=%~6
   set val7=%~7
+  set t=
+  rem sent the correct parameters by the number of variables declared on each task line
   if defined val7 (
+      echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
   call %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
   ) else (
     if defined val6 (
+          echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"
     call %val1% "%val3%" "%val4%" "%val5%" 
     ) else (
       if defined val5 (
+              echo %funcstarttext% %val1% "%val3%" "%val4%"
       call %val1% "%val3%" "%val4%"
       ) else (
+              echo %funcstarttext% %val1% "%val3%"
       call %val1% "%val3%"
       )
     )
   )
+  rem Increment the test count
   set /A tcount+=1
+  rem now echo the input values
   echo test input1: %val3%
   if defined val5 echo test input2: %val4%
   if defined val6 echo test input3: %val5%
   if defined val7 echo test input4: %val6%
-  echo test output: %utreturn%
-  echo    expected: %val2%
-  @if "%val2%" == "%utreturn%" set t=passed
-  @if "%val2%" neq "%utreturn%" set t=failed
-  if "%t%" == "failed" color 06
-  set reporta=%t%    %val1% test %tcount% 
+  rem now output each  output followed by the expected output
+  for /F "tokens=1-10 delims=," %%g in ("%val2%") do (
+    set expect1=%%g
+    set expect2=%%h
+    set expect3=%%i
+    set expect4=%%j
+    set expect5=%%k
+    set expect6=%%l
+    set expect7=%%m
+    set expect8=%%n
+    set expect9=%%o
+    set expect10=%%p
+    )
+  for /F "tokens=1-10 delims=," %%g in ("%utreturn%") do (
+    set utreturn1=%%g
+    set utreturn2=%%h
+    set utreturn3=%%i
+    set utreturn4=%%j
+    set utreturn5=%%k
+    set utreturn6=%%l
+    set utreturn7=%%m
+    set utreturn8=%%n
+    set utreturn9=%%o
+    set utreturn10=%%p
+    )
+  for /L %%n in (1,1,10) Do (
+    if defined expect%%n (
+      echo test output%%n: !utreturn%%n!
+      echo    expected%%n: !expect%%n!
+      echo on
+      if "!utreturn%%n!" == "!expect%%n!" set t=!t!0
+
+       if "!utreturn%%n!" neq "!expect%%n!"  set t=!t!1
+
+      echo off
+  ) 
+  ) 
+  set tword=passed
+  if %t% gtr 0 set tword=failed & color 06
+  set reporta=%tword%  %t%  %val1% test %tcount% 
   if defined val7 (
     echo %reporta% %val7%
     ) else (
@@ -479,10 +529,7 @@ goto :eof
     )
   )
   @echo.
-  set val3=
-  set val4=
-  set val5=
-  if defined funcgrp4 echo %funcendtext% %0
+  if not defined unittest if defined funcgrp4 echo %funcendtext% %0
 goto :eof
 
 :sub
@@ -516,21 +563,29 @@ goto :eof
   set info3=
   set info4=
   set info5=
+  set funcstarttext=
+  set funcendtext=
   if "%~1" geq "1" set info1=on
   if "%~1" geq "2" set info2=on
   if "%~1" geq "3" set info3=on
   if "%~1" geq "4" set info4=on
   if "%~1" geq "5" set info5=on
-  if not defined unittest set funcendtext=       ----}
-  if defined unittest set funcendtext=
-  if not defined unittest set funcstarttext={---
-  if defined unittest set funcstarttext=Testing
-  if "%~1" == "5" echo on
+  set funcstarttext1={---
+  set funcendtext1=       ----}
+  set dbfuncstarttext=Unit test
+  set dbfuncendtext=
+  if not defined unittest set funcstarttext=%funcstarttext1%
+  if not defined unittest set funcendtext=%funcendtext1%
+  if defined unittest set funcstarttext=%dbfuncstarttext%
+  if defined unittest set funcendtext=%dbfuncendtext%
+  rem if not unit testing the turn on eho for debugging
+  if not defined unittest if "%~1" == "5" echo on
   if "%~1" == "4" echo off
   if "%~1" == "3" echo off
   if "%~1" == "2" echo off
   if "%~1" == "1" echo off
   if "%~1" == "0" echo off
+  set utreturn= %info1%, %info2%, %info3%, %info4%, %info5%, %funcstarttext1%, %funcendtext1%, %funcstarttext%, %funcendtext%
   if defined funcgrp1 echo %funcendtext% %0
 goto :eof
 
