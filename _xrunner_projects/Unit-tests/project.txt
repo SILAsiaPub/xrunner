@@ -74,7 +74,4 @@ taskf6=:test :setinfolevel " on, on, on, on, on, {---,        ----}, Unit test, 
 buttong=check :drivepath
 taskg1=:test :drivepath "%expectpath1%" "%ptestfile1%" "%% x 2 var in project.txt"
 
-buttony=Start Winmerge
-tasky1=start "" "C:\Program Files (x86)\WinMerge\WinMergeU.exe" "C:\programs\xrunner" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk"
-tasky1=start "" "C:\Program Files (x86)\WinMerge\WinMergeU.exe" "D:\All-SIL-Publishing\_xrunner_projects\Unit-tests\project.txt" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Unit-tests\project.txt"
 
