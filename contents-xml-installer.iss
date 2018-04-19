@@ -8,7 +8,7 @@
 [Setup]
 OutputBaseFilename=Xrunner-installer
 AppName=Xrunner
-AppVersion=0.1
+AppVersion=0.2
 DefaultDirName=C:\programs\xrunner
 DisableDirPage=true
 DefaultGroupName=Publishing
@@ -31,11 +31,12 @@ Source: "scripts\*.xslt"; DestDir: "{#scripts}"
 Source: "scripts\*.cct"; DestDir: "{#scripts}"
 Source: "setup\*.html"; DestDir: "{app}\setup"
 Source: "setup\*.ini"; DestDir: "{app}\setup"
-Source: "D:\All-SIL-Publishing\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
-;Source: "D:\All-SIL-Publishing\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
-Source: "D:\All-SIL-Publishing\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
-Source: "D:\All-SIL-Publishing\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
-Source: "D:\All-SIL-Publishing\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\Program Files (x86)\SIL\cc\ccw32.exe');
+Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Unit-tests"  ;  Check: FileDoesNotExist('{app}\_Xrunner_Projects\Unit-tests\project.txt');
+Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
+;Source: "..\..\..\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
+Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
+Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
+Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{pf32}\SIL\cc\ccw32.exe');
 
 [Icons]
 Name: "{group}\Xrunner"; Filename: "{app}\xrunner.hta"; IconFilename: "{app}\setup\{#icon}"
@@ -43,7 +44,7 @@ Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}"
 
  [Run]
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
-Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d 'C:\Program Files (x86)\SIL\cc'";  Check: FileDoesNotExist('C:\Program Files (x86)\SIL\cc');
+Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d 'C:\Program Files (x86)\SIL\cc'";  Check: FileDoesNotExist('{pf32}\SIL\cc');
 Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
 
 [Dirs]
