@@ -15,11 +15,11 @@ set projectpath=%projectpath:~0,-1%
 set groupin=%2
 set infolevelin=%3
 set Pauseatend=%4
+setlocal enabledelayedexpansion
 color 07
 if not defined infolevel set infolevel=0
 call :setinfolevel %infolevel%
 if defined clfeedback echo Cmd: %0 "%1" %2 %3 %4 %5 
-setlocal enabledelayedexpansion
 goto :main
 
 :main
@@ -73,6 +73,7 @@ goto :eof
   set list=%~1
   if defined info2 echo Info: Setting variables from %list:~nx%
   FOR /F "eol=[ delims=;" %%q IN (%list%) DO set %%q
+    set utreturn=%list%
   if defined funcgrp5 echo %funcendtext% %0
 goto :eof
 
@@ -256,16 +257,20 @@ goto :eof
 
 :var
   if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set vname=%~1
   set value=%~2
+  if not defined vname echo Name value missing. Var not set & goto :eof
   call :v2 retval "%value%"
-  set %~1=%retval%
+  set %vname%=%retval%
   set utreturn=%retval%
   if defined funcgrp1 echo %funcendtext% %0
 goto :eof
 
 :v2
   if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set vname=%~1
   set value=%~2
+  if not defined vname echo Name value missing. Var not set & goto :eof
   set %~1=%value%
   set utreturn=%value%
   if defined funcgrp1 echo %funcendtext% %0
@@ -450,24 +455,24 @@ goto :eof
   set val6=%~6
   set val7=%~7
   set t=
-  rem sent the correct parameters by the number of variables declared on each task line
+  rem set the correct parameters for the command and the echo by the number of variables declared on each task line
   if defined val7 (
       echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
-  call %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
-  ) else (
-    if defined val6 (
-          echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"
-    call %val1% "%val3%" "%val4%" "%val5%" 
+      call %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
     ) else (
-      if defined val5 (
-              echo %funcstarttext% %val1% "%val3%" "%val4%"
-      call %val1% "%val3%" "%val4%"
-      ) else (
-              echo %funcstarttext% %val1% "%val3%"
-      call %val1% "%val3%"
+      if defined val6 (
+          echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"
+          call %val1% "%val3%" "%val4%" "%val5%" 
+        ) else (
+        if defined val5 (
+            echo %funcstarttext% %val1% "%val3%" "%val4%"
+            call %val1% "%val3%" "%val4%"
+          ) else (
+            echo %funcstarttext% %val1% "%val3%"
+            call %val1% "%val3%"
+          )
       )
     )
-  )
   rem Increment the test count
   set /A tcount+=1
   rem now echo the input values
@@ -506,11 +511,9 @@ goto :eof
       echo    expected%%n: !expect%%n!
       echo on
       if "!utreturn%%n!" == "!expect%%n!" set t=!t!0
-
-       if "!utreturn%%n!" neq "!expect%%n!"  set t=!t!1
-
+      if "!utreturn%%n!" neq "!expect%%n!"  set t=!t!1
       echo off
-  ) 
+    ) 
   ) 
   set tword=passed
   if %t% gtr 0 set tword=failed & color 06
@@ -529,6 +532,7 @@ goto :eof
     )
   )
   @echo.
+  if defined unittestpause pause
   if not defined unittest if defined funcgrp4 echo %funcendtext% %0
 goto :eof
 
