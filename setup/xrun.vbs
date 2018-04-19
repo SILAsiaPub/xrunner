@@ -352,17 +352,19 @@ Sub toggleIni(ini,key,value,eid)
 End Sub
 
 Sub  SetRadioFromIni(ini, section,key,idname,last)
-  dim x, infolevel
+  dim x, infolevel, radio
   infolevel = ReadIni(xrunini,section,key)
   For x = 0 To Cint(last)
     If infolevel = x then
-      inforadio.SetFocus
-      'Document.GetElementById(idname & x ).checked = True
-     '' Document.GetElementById(idname & x ).SetFocus
-     '' Document.GetElementById(idname & x ).ClickButton
-     Sys.Keys "[Down][Down]"
-     ''     Else
-     ' Document.GetElementById(idname & x ).removeAttribute("checked")
+      radio = idname & x
+      Document.GetElementById(idname & x ).checked = True
+      Document.GetElementById(idname & x ).SetFocus
+      Document.GetElementById(idname & x ).click
+      Document.GetElementById(idname & x ).ClickButton
+      call javascript:checkRadio(radio)
+      'Sys.Keys "[Down][Down]"
+    Else
+      Document.GetElementById(idname & x ).removeAttribute("checked")
     End If
   Next
 End Sub
