@@ -196,6 +196,7 @@ Function SelectFolder( myStartFolder )
     Dim objFolder, objItem, objShell, usea, useb
     ' Custom error handling
     On Error Resume Next
+    buttonHide()
     SelectFolder = vbNull
     ' Create a dialog object
     Set objShell  = CreateObject( "Shell.Application" )
@@ -206,7 +207,7 @@ Function SelectFolder( myStartFolder )
     projectTxt = SelectFolder & "\project.txt"
     If coFSO.FileExists(projectTxt) Then
     projectInfo = SelectFolder & "\project-info.txt"
-      buttonSet2()
+    buttonShow()
     Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
       call editArea1(projectTxt)
       call editArea2(projectInfo)
@@ -228,7 +229,7 @@ Function RunCmd( bat, param )
     objShell.run(cmdline)
 End Function
 
-Function buttonSet2()
+Function buttonShow()
   dim x, group
   For x = 0 To Ubound(tskgrp)
     group = tskgrp(x)
@@ -252,6 +253,16 @@ Function buttonSet2()
     End If
   Next
 End Function
+
+Function buttonHide()
+  dim x, group
+  For x = 0 To Ubound(tskgrp)
+    group = tskgrp(x)
+    document.getElementById("grouplabel" & group).style.display = "none"
+    document.getElementById("button" & group).style.display = "none"
+  Next
+End Function
+
 
 Sub xrun(group)
     Dim x, pauseatend
