@@ -1,7 +1,7 @@
 [variables]
 title=Unit Tests
-unittest=on
-unittestpause=on
+unittest=
+unittestpause=
 noxslt=on
 seedpath1=D:\All-SIL-Publishing\_xrunner-projects\Var-testing
 seedpath2=D:\All-SIL-Publishing\_xrunner-projects
@@ -56,15 +56,19 @@ taske4=:test :v2 "%expectfile1%" val "!ptestfile1!" "%% + exclamation var in pro
 taske6=:test :v2 "%expectpath1%" val "%etestpath1%" "%% x 2 var in project.txt"         
 taske8=:test :v2 "%expectpath1%" val "!etestpath1!" "exclamation x 2 var in project.txt"
 buttonf= check :setinfolevel
-taskf1=:test :setinfolevel " , , , , , {---,        ----}, Unit test, " 0 " nothing yet"
-taskf2=:test :setinfolevel " on, , , , , {---,        ----}, Unit test, " 1 " nothing yet"
-taskf3=:test :setinfolevel " on, on, , , , {---,        ----}, Unit test, " 2 " nothing yet"
-taskf4=:test :setinfolevel " on, on, on, , , {---,        ----}, Unit test, " 3 " nothing yet"
-taskf5=:test :setinfolevel " on, on, on, on, , {---,        ----}, Unit test, " 4 " nothing yet"
-taskf6=:test :setinfolevel " on, on, on, on, on, {---,        ----}, Unit test, " 5 " nothing yet"
+taskf1=:test :setinfolevel " , , , , , {---,        ----}" 0 " nothing yet"
+taskf2=:test :setinfolevel " on, , , , , {---,        ----}" 1 " nothing yet"
+taskf3=:test :setinfolevel " on, on, , , , {---,        ----}" 2 " nothing yet"
+taskf4=:test :setinfolevel " on, on, on, , , {---,        ----}" 3 " nothing yet"
+taskf5=:test :setinfolevel " on, on, on, on, , {---,        ----}" 4 " nothing yet"
+taskf6=:test :setinfolevel " on, on, on, on, on, {---,        ----}" 5 " nothing yet"
+
 buttong=check :drivepath
 taskg1=:test :drivepath "%expectpath1%" "%ptestfile1%" "%% x 2 var in project.txt"
 buttonh=check :variableslist
 taskh1=:test :variableslist "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Developer\project.txt" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Developer\project.txt" "Check variables creation"
 taskh2=set unitteston=
 taskh1=:test :variableslist "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Developer\project.txt" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Developer\project.txt" "Check variables creation with unit test off"
+
+buttonk=Unit test the Core func
+taskk1=start xrun "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\_xrunner_projects\Developer\project.txt" a 0 pause coretest

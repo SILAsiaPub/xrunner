@@ -27,69 +27,72 @@
    <input type="BUTTON" value="Edit project.txt file" onclick="call editFileExternal(projectTxt)" class="floatright halfbutton">
   </form>
   <div id="project" class="tabcontent active">
-
+  <div class="settings">
+         Show feedback info  <br /> level 0
+      <input id="infoid0" onclick="call writeIni(xrunini,'feedback','infolevel','0')" type="radio" value="0" name="inforadio"> &ensp; level 1
+      <input id="infoid1" onclick="call writeIni(xrunini,'feedback','infolevel','1')" type="radio" value="1" name="inforadio"> &ensp; level 2 
+      <input id="infoid2" onclick="call writeIni(xrunini,'feedback','infolevel','2')" type="radio" value="2" name="inforadio" checked> &ensp; <br /> level 3 
+      <input id="infoid3" onclick="call writeIni(xrunini,'feedback','infolevel','3')" type="radio" value="3" name="inforadio"> &ensp; level 4 
+      <input id="infoid4" onclick="call writeIni(xrunini,'feedback','infolevel','4')" type="radio" value="4" name="inforadio"> &ensp; level 5
+      <input id="infoid5" onclick="call writeIni(xrunini,'feedback','infolevel','5')" type="radio" value="5" name="inforadio">  <br />
+      <input id="pauseatend" onclick="call toggleIni(xrunini,'feedback','pauseatend')" value="pause" type="checkbox" name="checkbox1"> Pause at the end of the tasks?<br />
+     <!--   <input id="unittest" onclick="call toggleIni(xrunini,'unittest','unittest')" value="pause" type="checkbox" name="checkbox1"> Unit testing? -->    
+  </div>
   <div id="grouplabela"></div>
   <button onclick="call xrun('a')" class="inibutton" id="buttona">Run group A tasks</button>
   <div id="grouplabelb"></div>
   <button onclick="call xrun('b')" class="inibutton" id="buttonb">Run group B tasks</button>
   <div id="grouplabelc"></div>
-  <button onclick="xrun('c')" class="inibutton" id="buttonc">Run group C tasks</button>
+  <button onclick="call xrun('c')" class="inibutton" id="buttonc">Run group C tasks</button>
   <div id="grouplabeld"></div>
-  <button onclick="xrun('d')" class="inibutton" id="buttond">Run group D tasks</button>
+  <button onclick="call xrun('d')" class="inibutton" id="buttond">Run group D tasks</button>
   <div id="grouplabele"></div>
-  <button onclick="xrun('e')" class="inibutton" id="buttone">Run group E tasks</button>
+  <button onclick="call xrun('e')" class="inibutton" id="buttone">Run group E tasks</button>
   <div id="grouplabelf"></div>
-  <button onclick="xrun('f')" class="inibutton" id="buttonf">Run group F tasks</button>
+  <button onclick="call xrun('f')" class="inibutton" id="buttonf">Run group F tasks</button>
   <div id="grouplabelg"></div>
-  <button onclick="xrun('g')" class="inibutton" id="buttong">Run group G tasks</button>
+  <button onclick="call xrun('g')" class="inibutton" id="buttong">Run group G tasks</button>
   <div id="grouplabelh"></div>
-  <button onclick="xrun('h')" class="inibutton" id="buttonh">Run group H tasks</button>
+  <button onclick="call xrun('h')" class="inibutton" id="buttonh">Run group H tasks</button>
   <div id="grouplabeli"></div>
-  <button onclick="xrun('i')" class="inibutton" id="buttoni">Run group I tasks</button>
+  <button onclick="call xrun('i')" class="inibutton" id="buttoni">Run group I tasks</button>
   <div id="grouplabelj"></div>
-  <button onclick="xrun('j')" class="inibutton" id="buttonj">Run group J tasks</button>
+  <button onclick="call xrun('j')" class="inibutton" id="buttonj">Run group J tasks</button>
   <div id="grouplabelk"></div>
-  <button onclick="xrun('k')" class="inibutton" id="buttonk">Run group K tasks</button>
+  <button onclick="call xrun('k')" class="inibutton" id="buttonk">Run group K tasks</button>
   <div id="grouplabell"></div>
-  <button onclick="xrun('l')" class="inibutton" id="buttonl">Run group L tasks</button>
+  <button onclick="call xrun('l')" class="inibutton" id="buttonl">Run group L tasks</button>
   <div id="grouplabelm"></div>
-  <button onclick="xrun('m')" class="inibutton" id="buttonm">Run group M tasks</button>
+  <button onclick="call xrun('m')" class="inibutton" id="buttonm">Run group M tasks</button>
   <div id="grouplabeln"></div>
-  <button onclick="xrun('n')" class="inibutton" id="buttonn">Run group N tasks</button>
+  <button onclick="call xrun('n')" class="inibutton" id="buttonn">Run group N tasks</button>
   <div id="grouplabelo"></div>
-  <button onclick="xrun('o')" class="inibutton" id="buttono">Run group O tasks</button>
+  <button onclick="call xrun('o')" class="inibutton" id="buttono">Run group O tasks</button>
   <div id="grouplabelp"></div>
-  <button onclick="xrun('p')" class="inibutton" id="buttonp">Run group P tasks</button>
+  <button onclick="call xrun('p')" class="inibutton" id="buttonp">Run group P tasks</button>
   <div id="grouplabelq"></div>
-  <button onclick="xrun('q')" class="inibutton" id="buttonq">Run group Q tasks</button>
+  <button onclick="call xrun('q')" class="inibutton" id="buttonq">Run group Q tasks</button>
   <div id="grouplabelr"></div>
-  <button onclick="xrun('r')" class="inibutton" id="buttonr">Run group R tasks</button>
+  <button onclick="call xrun('r')" class="inibutton" id="buttonr">Run group R tasks</button>
   <div id="grouplabels"></div>
-  <button onclick="xrun('s')" class="inibutton" id="buttons">Run group S tasks</button>
+  <button onclick="call xrun('s')" class="inibutton" id="buttons">Run group S tasks</button>
    <div id="grouplabelt"></div>
- <button onclick="xrun('t')" class="inibutton" id="buttont">Run group T tasks</button>
+ <button onclick="call xrun('t')" class="inibutton" id="buttont">Run group T tasks</button>
    <div id="grouplabelu"></div>
- <button onclick="xrun('u')" class="inibutton" id="buttonu">Run group U tasks</button>
+ <button onclick="call xrun('u')" class="inibutton" id="buttonu">Run group U tasks</button>
    <div id="grouplabelv"></div>                          
- <button onclick="xrun('v')" class="inibutton" id="buttonv">Run group V tasks</button>
+ <button onclick="call xrun('v')" class="inibutton" id="buttonv">Run group V tasks</button>
    <div id="grouplabelw"></div>
- <button onclick="xrun('w')" class="inibutton" id="buttonw">Run group W tasks</button>
+ <button onclick="call xrun('w')" class="inibutton" id="buttonw">Run group W tasks</button>
    <div id="grouplabelx"></div>
- <button onclick="xrun('x')" class="inibutton" id="buttonx">Run group X tasks</button>
+ <button onclick="call xrun('x')" class="inibutton" id="buttonx">Run group X tasks</button>
    <div id="grouplabely"></div>
- <button onclick="xrun('y')" class="inibutton" id="buttony">Run group Y tasks</button>
+ <button onclick="call xrun('y')" class="inibutton" id="buttony">Run group Y tasks</button>
    <div id="grouplabelz"></div>
- <button onclick="xrun('z')" class="inibutton" id="buttonz">Run group Z tasks</button>
+ <button onclick="call xrun('z')" class="inibutton" id="buttonz">Run group Z tasks</button>
   <!-- <hr>
       <div id=Results>&nbsp</div> -->
-      Show feedback info  level 0
-      <input id="infoid0" onclick="call writeIni(xrunini,'feedback','infolevel','0')" type="radio" value="0" name="inforadio"> &ensp; level 1
-      <input id="infoid1" onclick="call writeIni(xrunini,'feedback','infolevel','1')" type="radio" value="1" name="inforadio"> &ensp; level 2
-      <input id="infoid2" onclick="call writeIni(xrunini,'feedback','infolevel','2')" type="radio" value="2" name="inforadio"> &ensp; level 3 
-      <input id="infoid3" onclick="call writeIni(xrunini,'feedback','infolevel','3')" type="radio" value="3" name="inforadio"> &ensp; level 4 
-      <input id="infoid4" onclick="call writeIni(xrunini,'feedback','infolevel','4')" type="radio" value="4" name="inforadio"> &ensp; level 5
-      <input id="infoid5" onclick="call writeIni(xrunini,'feedback','infolevel','5')" type="radio" value="5" name="inforadio">  <br />
-      <input id="pauseatend" onclick="call toggleIni(xrunini,'setup','pauseatend','pauseatend')" value="pause" type="checkbox" name="checkbox1"> Pause at the end of the tasks?
+
 </div>
 <div id="projectinfo" class="tabcontent">
  <form>

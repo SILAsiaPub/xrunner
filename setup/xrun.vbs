@@ -233,22 +233,15 @@ Function buttonShow()
   dim x, group
   For x = 0 To Ubound(tskgrp)
     group = tskgrp(x)
-    'call buttonSet(tskgrp(x))
-    If len(ReadIni(projectTxt,"tasks","label" & group)) > zero Then
+    If len(ReadIni(projectTxt,group,"label")) > zero Then
         document.getElementById("grouplabel" & group).style.display = "block"
-        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,"tasks","label" & group)
+        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,group,"label")
     End If
-    If len(ReadIni(projectTxt,"tasks","button" & group)) > zero Then
+    If len(ReadIni(projectTxt,group,"button")) > zero Then
         document.getElementById("button" & group).style.display = "block"
-        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,"tasks","button" & group)
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 1)) > zero Then
+        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,group,"button")
+    Elseif len(ReadIni(projectTxt,group,"t")) > zero Then
       ' looks for tasks in the first 4 tasks
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 2)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 3)) > zero Then
-      document.getElementById("button" & group).style.display = "block"
-    Elseif len(ReadIni(projectTxt,"tasks","task" & group & 4)) > zero Then
       document.getElementById("button" & group).style.display = "block"
     End If
   Next
@@ -265,7 +258,7 @@ End Function
 
 
 Sub xrun(group)
-    Dim x, pauseatend
+    Dim x, pauseatend, unittest
     pauseatend = ""
     For x = 0 To 5
       if document.getElementById("infoid" & x).checked Then
@@ -275,7 +268,10 @@ Sub xrun(group)
     If document.getElementById("pauseatend").checked  Then
        pauseatend = "pause"
     End If   
-   call RunScript("xrun",projectTxt,group,level,pauseatend)
+    'If document.getElementById("unittest").checked  Then
+    '   unittest = "unittest"
+    'End If
+   call RunScript("xrun",projectTxt,group,level,pauseatend,"")
 End Sub
 
 Sub copy()
@@ -285,7 +281,7 @@ Sub copy()
   call RunScript("copy","/Y",x,y,"")
 End Sub
 
-Sub RunScript(script,var1,var2,var3,var4)
+Sub RunScript(script,var1,var2,var3,var4,var5)
     'writeProjIni projIni,"variables",styleout
     dim infopar(5), x
     infopar(0) = chr(34) & script & chr(34)
@@ -293,7 +289,8 @@ Sub RunScript(script,var1,var2,var3,var4)
     infopar(2) = " " & var2
     infopar(3) = " " & var3
     infopar(4) = " " & var4
-    cmdline = infopar(0) & infopar(1) & infopar(2) & infopar(3) & infopar(4)
+    infopar(5) = " " & var5
+    cmdline = infopar(0) & infopar(1) & infopar(2) & infopar(3) & infopar(4) & infopar(5)
     objShell.run(cmdline)
     document.getElementById("lastcmd").InnerText = "Last commandline: " & cmdline
     'CmdPrompt(cmdline)
@@ -343,11 +340,11 @@ Sub SaveFile(data,filename)
   coFSO.CreateTextFile(filename).Write document.all.data.value
 End Sub
 
-Sub toggleIni(ini,key,value,eid)
-  If Document.GetElementById(eid).Checked = False Then
-    call WriteIni( ini, key,value , "" )
+Sub toggleIni(ini,section,key)
+  If Document.GetElementById(key).Checked = False Then
+    call WriteIni( ini, section,key , "" )
   Else
-    call WriteIni( ini, key,value , "on" )
+    call WriteIni( ini, section,key , "on" )
   End If
 End Sub
 
@@ -386,5 +383,6 @@ End Sub
 
 Sub presets()
   call SetRadioFromIni(xrunini, "feedback","infolevel","infoid",5)
-  call SetCboxByIdFromIni(xrunini, "setup","pauseatend","pauseatend")
+  call SetCboxByIdFromIni(xrunini, "feedback","pauseatend","pauseatend")
+  'call SetCboxByIdFromIni(xrunini, "setup","unittest","unittest")
 End Sub
