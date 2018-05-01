@@ -8,7 +8,7 @@ BODY {
 h2 {margin: 6pt 0 6pt 0;}
 iframe {margin: 6pt 0 0 0;}
 .widebutton {width:400px}
-.inibutton {width:300px;clear:both;display:block}
+.inibutton {width:300px;clear:left;display:block}
 .halfbutton {width:150px;display:inline}
 .label {padding-top:10pt}
 .sample {width:154px;height:123px;}
@@ -18,7 +18,7 @@ iframe {margin: 6pt 0 0 0;}
 #buttonu, #buttonv, #buttonw, #buttonx, #buttony, #buttonz
  {display:none}
 
-
+.settings {float:right;clear:right}
 /* Style the tab */
 .tab {
     clear:both;

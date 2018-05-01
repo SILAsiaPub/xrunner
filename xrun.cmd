@@ -2,6 +2,8 @@
 :: Usage: xrun C:\path\project.txt [group] [infolevel] [pauseatend]
 :: Note: Xrun requires a project file. The group parameter is normally a letter a-t but can be nothing. If nothing all groups are run.
 @echo off
+set echoatstart=%~3
+if "%echoatstart%" == "5" echo on
 rem 
 set projectfile=%1 
 if not exist %1 (
@@ -13,23 +15,29 @@ if not exist %1 (
 set projectpath=%~dp1
 set projectpath=%projectpath:~0,-1%
 set groupin=%2
-set infolevelin=%3
+set infolevel=%3
 set Pauseatend=%4
+set unittest=%5
 setlocal enabledelayedexpansion
 color 07
 if not defined infolevel set infolevel=0
 call :setinfolevel %infolevel%
 if defined clfeedback echo Cmd: %0 "%1" %2 %3 %4 %5 
-goto :main
+if not defined unittest goto :main %groupin%
+if defined unittest call :test
+goto :eof
 
 :main
 :: Description: Main Loop, does setup and gets variables then runs group loops.
 :: Depends on: setup, taskgroup
-  if defined funcgrp5 echo %funcstarttext% %0
+  if defined info4 echo {---- :main
+  set group=%~1
   call :setup
-  if defined groupin call :taskgroup %groupin%
-  if not defined groupin for %%g in (%taskgroup%) do call :taskgroup %%g
-  if defined funcgrp5 echo %funcendtext% %0
+  if defined groupin call :taskgroup task%groupin%
+  if not defined groupin for %%g in (%taskgroup%) do call :taskgroup task%%g
+  if defined unittest for %%g in (%taskgroup%) do call :testecho task%%g
+  set utreturn= %groupid%, %taskgroup%
+  if defined info4 echo %funcendtext% :main
   if defined pauseatend pause
 goto :eof
 
@@ -37,10 +45,12 @@ goto :eof
 :: Description: Loop that triggers each task in the group.
 :: Usage: call :taskgroup group
 :: Requires: task
-  if defined funcgrp5 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set group=%~1
-  set taskend=!task%~1count!
-  FOR /L %%c IN (1,1,%taskend%) DO call :task %group%%%c 
+  set taskend=!%~1count!
+  if not defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :task %group%%%c
+  if defined unittest FOR /L %%c IN (1,1,%taskend%) DO echo %group%%%c
+  set utreturn=%group%, %taskend%
   if defined info4 echo %funcendtext% %0 %~1
 goto :eof
 
@@ -49,46 +59,67 @@ goto :eof
 :: Usage: call :task task
 :: Note: The task variable is an interger number, in the range 1-20 but can be set higher.
 :: Depends on: 
-  if not defined task%~1 goto :eof
-  if defined funcgrp5 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set task=%~1
+  if not defined %task% goto :eof
+  set call=
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   if defined skiptasks goto :eof
-  set task=!task%~1!
-  rem set task=%task%
-  set first=%task:~0,1%
-  if defined task%~1 (
-    if "%first%" == ":" (
-      call !task%~1!
-    ) else (
-      !task%~1!
-    )
-  )
-  if defined funcgrp5 echo %funcendtext% %0 %~1
+  set curcommand=!%~1!
+  set firstlet=%curcommand:~0,1%
+  if "%firstlet%" == ":" set call=call
+  if not defined unittest %call% !%~1!
+  set utreturn=%task%, %firstlet%, %curcommand:"='%, 
+  if defined info4 echo %funcendtext% %0 %~1
 goto :eof
 
 
 :variableslist
 :: Description: Handles variables list supplied in a file.
 :: Usage: call :variableslist list
-  if defined funcgrp5 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set list=%~1
-  if defined info2 echo Info: Setting variables from %list:~nx%
+  if defined info2 echo.
+  if defined info2 echo Info: Setting variables from: %~nx1
   FOR /F "eol=[ delims=;" %%q IN (%list%) DO set %%q
-    set utreturn=%list%
-  if defined funcgrp5 echo %funcendtext% %0
+  set utreturn=%list%
+  if defined info4 echo %funcendtext% %0
+goto :eof
+
+:readline
+:: Description: Handles variables list supplied in a file.
+:: Usage: call :variableslist list
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set list=%~1
+  set func=%~2
+  set par3=%~3
+  set par4=%~4
+  if defined info2 echo.
+  if defined info2 echo Info: Reading lines from: %~nx1
+  FOR /F "eol=[ delims=;" %%q IN (%list%) DO call %func% %%q %par3%
+  set utreturn=%list%, %func%
+  if defined info4 echo %funcendtext% %0
+goto :eof
+
+:inisection
+:: Description: Read a section of an ini
+set line=%~1
+set section=%~2
+if not defined line goto :eof
+if %line:~0,1% == [ set skipkey=on
+if %line% == [%section%] set skipkey=
+if %line% == [%section%] set foundsect=%section%
+
 goto :eof
 
 :setup
 :: Description: Sets up the variables and does some checking.
 :: Usage: call :setup
 :: Depends on: variableslist, xslt
-  if defined funcgrp5 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set /A count=0
   call :variableslist "%cd%\setup\xrun.ini"
   for %%k in (%taskgroup%) do set task%%kcount=%defaulttaskcount%
   set maxsubcount=%defaulttaskcount%
-  if defined infolevelin set infolevel=infolevelin
-  call :variableslist "%projectfile%"
-  call :setinfolevel %infolevelin%
   if not defined noxslt (
     rem this is run unless xslt (including Java and Saxon) is not needed
     if not exist "%ProgramFiles%\java" (
@@ -105,7 +136,10 @@ goto :eof
     call :xslt variable2xslt.xslt blank.xml scripts\project.xslt "projectpath='%projectpath%'"
     if exist "scripts\project.xslt" move /Y "scripts\project.xslt" "%scripts%"
   )
-  if defined funcgrp5 echo %funcendtext% %0
+  call "%projectpath%\tmp\project.cmd"
+  rem call :variableslist "%projectfile%"
+  call :setinfolevel %infolevel%
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 
@@ -113,28 +147,29 @@ goto :eof
 :: Description: Runs Java with saxon to process XSLT transformations.
 :: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
 :: Depends on: inccount, infile, outfile
-  if defined funcgrp2 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount %count%
   set script=%scripts%\%~1
   call :infile "%~2"
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
-  if not exist "%script%" echo Error: missing script file & goto :eof
+  if not exist "%script%" echo Error: missing script: %script%& color 06 & goto :eof
   set params=%~4
   if defined params set params=%params:'="%
-  if defined params set params=%params:::==%
+  rem if defined params set params=%params:::==%
     )
   if exist "%outfile%" copy /y "%outfile%" "%outfile%.prev" >> log.txt
   if exist "%outfile%" del "%outfile%"
+  if defined info3 echo.
   if defined info3 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
   %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
-  call :funcend %0 funcgrp2
+  call :funcend %0 info4
 goto :eof
 
 :cct                                               
   :: Description: Privides interface to CCW32.
   :: Usage: call :cct script.cct ["infile.txt" ["outfile.txt"]]
 :: Depends on: inccount, infile, outfile
-  if defined funcgrp2 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount %count%
   set script=%scripts%\%~1
   if not defined script echo CCT missing! & goto :eof
@@ -149,13 +184,13 @@ goto :eof
   set curcommand="%ccw32%" %cctparam% -t "%script%" -o "%outfile%" "%infile%"
   if defined info3 echo %curcommand%
   call %curcommand%
-  call :funcend %0 funcgrp2
+  call :funcend %0 info4
 goto :eof
 
 :infile
   :: Description: If infile is specifically set then uses that else uses previous outfile.
   :: Usage: call :infile "%file%"
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set infile=%~1
   if not defined infile set infile=%outfile%
   if exist "%infile%" (
@@ -164,22 +199,21 @@ goto :eof
     set missinginput=on
     echo Error: missing input file to :infile
   )
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :outfile
   :: Description: If out file is specifically set then uses that else uses supplied name.
   :: Usage: call :outfile "C:\path\file.ext" "%cd%\tmp\%script%.xml"
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set testoutfile=%~1
   set testoutdp=%~dp1
   set testoutnx=%~nx1
-  if defined info1 set testoutfile
   rem call :v2 testoutfile "!testoutfile!"
   set defaultoutfile=%~2
   set defaultoutdp=%~dp2
   set defaultoutnx=%~nx2
-  if defined info1 set defaultoutfile
+  rem if defined info1 set defaultoutfile
   set nocheck=%~3
   if not defined testoutfile (
     rem this is to resolve var form project file
@@ -193,26 +227,27 @@ goto :eof
     set outnx=%testoutnx%
   )
   if not defined nocheck call :checkdir "%outfile%"
-  set utreturn=%outfile%
-  set utreturn2=%outdp%
-  set utreturn3=%outnx%
-  if defined funcgrp1 echo %funcendtext% %0
+  set utreturn=%outfile%, %outdp%, %outnx%
+  if defined info4 echo.
+  if defined info4 if defined testoutfile echo Outfile supplied  %~nx1
+  if defined info4 if not defined testoutfile echo Outfile fallback used %~nx2
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :drivepath
   :: Description: returns the drive and path from a full drive:\path\filename
   :: Usage: call :drivepath C:\path\name.ext|path\name.ext
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set utdp=%~dp1
   set drivepath=%utdp:~0,-1%
   set utreturn=%drivepath%
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :checkdir
   :: Description: checks if dir exists if not it is created
   :: Usage: call :checkdir C:\path\name.ext
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   rem Note to resolve var from project.txt use !var! form for !projectpath!
   call :v2 checkpath "%~1"
   set ext=%~x1
@@ -235,16 +270,16 @@ goto :eof
       mkdir "%testpath%"
   )
   set utreturn=%testpath%
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :inccount
 :: Description: iIncrements the count variable
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set /A count=%count%+1
   set writecount=%count%
   if %count% lss 10 set writecount=%space%%count%
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :inc
@@ -256,30 +291,30 @@ set /A %~1-=1
 goto :eof
 
 :var
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set vname=%~1
   set value=%~2
   if not defined vname echo Name value missing. Var not set & goto :eof
   call :v2 retval "%value%"
   set %vname%=%retval%
   set utreturn=%retval%
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :v2
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set vname=%~1
   set value=%~2
   if not defined vname echo Name value missing. Var not set & goto :eof
   set %~1=%value%
   set utreturn=%value%
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :outputfile
 :: Description: Copies last out file to new name. Used to make a static name other tasklists can use.
 :: Usage: :outputfile drive:\path\file.ext
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 call :inccount
 set infile=%outfile%
   call :var infile "%infile%"
@@ -287,14 +322,14 @@ set outfile=%~1
 call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
   @ if exist "%outfile%" echo File created: %~nx1 in folder: %~dp1
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :command
 :: Description: A way of passing any commnand from a tasklist. It does not use infile and outfile.
 :: Usage: call :usercommand "copy /y 'c:\patha\file.txt' 'c:\pathb\file.txt'" ["path to run  command in"   "output file to test for"]
 :: Note: Single quotes get converted to double quotes before the command is used.
-  if defined funcgrp2 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 call :inccount
 set curcommand=%~1
 set commandpath=%~2
@@ -324,7 +359,7 @@ goto :eof
 :: Usage: call :command2file "command" "outfile" ["commandpath"]
 :: Depends on: inccount, outfile
 :: Note: This command does its own expansion of single quotes to double quotes so cannont be fed directly from a ifdefined or ifnotdefined. Instead define a task that is fired by the ifdefined.
-  if defined funcgrp2 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 call :inccount
 set command=%~1
 set out=%~2
@@ -357,7 +392,7 @@ goto :eof
 :command2var
 :: Description: creates a variable from the command line
 :: Usage: call :command2var varname "command" "comment"
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 set commandline=%~1
 set varname=%~2
 set invalid=%~3
@@ -369,22 +404,22 @@ if defined comment echo %comment%
   FOR /F "delims=#" %%s IN ('%commandline%') DO set %varname%=%%s & set utreturn=%%s
 set commandline=
 set comment=
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :inputfile
 :: Description: Sets the starting file of a serial tasklist, by assigning it to the var outfile
 :: usage: call :inputfile "drive:\path\file.ext"
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 set outfile=%~1
   if not defined outfile echo Missing param1  & set skip=on
-  if defined funcgrp1 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :loopfiles
 :: Description: Used to loop through a subset of files specified by the filespec from a single directory
 :: Usage: call :loopfiles "action" "file specs" ["comment" ]
-  if defined funcgrp3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 set action=%~1
 set filespec=%~2
 set comment=%~3
@@ -402,14 +437,14 @@ set action=%action:'="%
     )
 
   )
-  if defined funcgrp3 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :loopstring
 :: Description: Loops through a list supplied in a string.
 :: Usage: call :loopstring action "string" ["comment"]
 :: Note: action may have multiple parts
-  if defined funcgrp3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set action=%~1
   set string=%~2
   set comment=%~3
@@ -427,12 +462,13 @@ goto :eof
         %action% %%s
       )
     )
-  if defined funcgrp3 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :start
+:: depreciated: this is not needed
 :: Description: Start a program but don't wait for it.
-  if defined funcgrp2 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :var p1 %~1
   call :var p2 %~2
   set p3=%~3
@@ -440,13 +476,13 @@ goto :eof
   echo.
   echo start "%p1%" "%p2%" "%p3%" "%p4%"
   start "%p1%" "%p2%" "%p3%" "%p4%"
-  if defined funcgrp2 echo %funcendtext% %0
+  if defined info4 echo %funcendtext% %0
 goto :eof
 
 :test
 :: Description: Used for unit testing
 :: Usage: call :test val1 val2 report
-  if defined funcgrp4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7"
   set val1=%~1
   set val2=%~2
   set val3=%~3
@@ -456,23 +492,10 @@ goto :eof
   set val7=%~7
   set t=
   rem set the correct parameters for the command and the echo by the number of variables declared on each task line
-  if defined val7 (
-      echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
-      call %val1% "%val3%" "%val4%" "%val5%"  "%val6%"
-    ) else (
-      if defined val6 (
-          echo %funcstarttext% %val1% "%val3%" "%val4%" "%val5%"
-          call %val1% "%val3%" "%val4%" "%val5%" 
-        ) else (
-        if defined val5 (
-            echo %funcstarttext% %val1% "%val3%" "%val4%"
-            call %val1% "%val3%" "%val4%"
-          ) else (
-            echo %funcstarttext% %val1% "%val3%"
-            call %val1% "%val3%"
-          )
-      )
-    )
+  set preaddnumbparam=%val1%
+  for /L %%v in (4,1,7) Do call :addnumbparam val %%v -1
+  echo Unit test %preaddnumbparam%
+  call %preaddnumbparam%
   rem Increment the test count
   set /A tcount+=1
   rem now echo the input values
@@ -517,29 +540,47 @@ goto :eof
   ) 
   set tword=passed
   if %t% gtr 0 set tword=failed & color 06
-  set reporta=%tword%  %t%  %val1% test %tcount% 
-  if defined val7 (
-    echo %reporta% %val7%
-    ) else (
-    if defined val6 (
-      echo %reporta% %val6%
-    ) else (
-      if defined val5 (
-      echo %reporta% %val5%
-      ) else (
-      echo %reporta% %va4%
-      )
-    )
-  )
+  for /L %%v in (7,-1,4) Do call :last val %%v
+  echo %tword%  %t%  %val1% test %tcount% %last%
   @echo.
   if defined unittestpause pause
   if not defined unittest if defined funcgrp4 echo %funcendtext% %0
 goto :eof
 
+:testcore
+  rem :main will call :setup
+  call :test :main " a, a" "a" "Testing Main"
+  call :test :main " , a b c d e f g h i j k l m n o p q r s t u v w x y z" "" "Testing Main without group"
+  call :test :taskgroup "taska, 20" "taska" "Testing with a task"
+  set taska1=:testecho "This is to test task in unittesting"
+  call :test :task "taska1, :" "taska1" "Testing with a task"
+goto :eof
+
+:testecho
+  echo :testecho %~1
+goto :eof
+
+:addnumbparam
+:: Description: Append numbered parameters on the end of a predefined %preaddnumbparam% string
+:: Usage: call :addnumbparam prepart-of-par-name seed-numb [value-to-add-or-subtract]
+:: Note: Default value to add or subtract is -0
+  set minusnumb=%~3
+  if not defined minusnumb set minusnumb=+0
+  set /A less=%~2%minusnumb%
+  if defined val%~2 set preaddnumbparam=%preaddnumbparam% "!%~1%less%!"
+goto :eof
+
+:last
+  if defined lastfound goto :eof
+  set last=!%~1%~2!
+  if defined last set lastfound=on
+goto :eof
+
+
 :sub
 :: Description: Starts a sub loop
 :: Usage: call :sub "subname" "['param1' ['param2' ['param3' ['param4']]]]"
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set subname=%~1
   Set PAR2=%~2
   If not defined par1 echo Missing param1. Exit function! & goto :eof
@@ -560,36 +601,21 @@ goto :eof
 :: Description: Used for initial setup and after xrun.ini and project.txt
 :: Usage: call :setinfolevel numb-level
 :: Note: numb-level range 0-5
+  if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   rem reset info vars
-  if defined funcgrp1 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
-  set info1=
-  set info2=
-  set info3=
-  set info4=
-  set info5=
-  set funcstarttext=
-  set funcendtext=
-  if "%~1" geq "1" set info1=on
-  if "%~1" geq "2" set info2=on
-  if "%~1" geq "3" set info3=on
-  if "%~1" geq "4" set info4=on
-  if "%~1" geq "5" set info5=on
-  set funcstarttext1={---
-  set funcendtext1=       ----}
-  set dbfuncstarttext=Unit test
-  set dbfuncendtext=
-  if not defined unittest set funcstarttext=%funcstarttext1%
-  if not defined unittest set funcendtext=%funcendtext1%
-  if defined unittest set funcstarttext=%dbfuncstarttext%
-  if defined unittest set funcendtext=%dbfuncendtext%
-  rem if not unit testing the turn on eho for debugging
+  for /L %%v in (1,1,5) Do set info%%v=
+  rem set info levels from input
+  for /L %%v in (1,1,5) Do if "%~1" geq "%%v" set info%%v=on
+  if defined info4 echo.
+  if defined info4 FOR /F %%i IN ('set info') DO echo Info: %%i
+  if "%~1" geq "3" set clfeedback=on
+  set funcstarttext={---
+  set funcendtext=       ----}
+  rem if not unit testing the turn on echo for debugging
   if not defined unittest if "%~1" == "5" echo on
-  if "%~1" == "4" echo off
-  if "%~1" == "3" echo off
-  if "%~1" == "2" echo off
-  if "%~1" == "1" echo off
-  if "%~1" == "0" echo off
-  set utreturn= %info1%, %info2%, %info3%, %info4%, %info5%, %funcstarttext1%, %funcendtext1%, %funcstarttext%, %funcendtext%
+  rem turn off echo for the remaining levels
+  for /L %%v in (4,-1,0) Do if "%~1" == "%%v" echo off
+  set utreturn= %info1%, %info2%, %info3%, %info4%, %info5%, %funcstarttext%, %funcendtext%
   if defined funcgrp1 echo %funcendtext% %0
 goto :eof
 
@@ -598,9 +624,22 @@ goto :eof
 :: Usage: call :funcend %%0
   set funcname=%~1
   set endfunc=%~2
+  @if defined info1 if exist "%outfile%" echo.
   @if defined info1 if exist "%outfile%" echo Created: %outfile%
-  @if defined outfile if not exist "%outfile%" color 60 & Echo Output file not created!
-  @if not defined unittest if defined endfunc echo %funcendtext% %funcname%
+  @if defined outfile if not exist "%outfile%" color 06 & Echo Output file not created!
+  @if defined info4 echo %funcendtext% %funcname%
   @if defined outfile if not exist "%outfile%" set skiptasks=on  & pause
 goto :eof
 
+:prince
+:: Description: Make PDF using PrinceXML
+:: Usage: call :prince [infile [outfile [css]]]
+  call :infile %~1
+  call :outfile %~2
+  set css=%~3
+  if defined css set css=-s "%css%"
+  set curcommand=call "%prince%" %css% "%infile%" -o "%outfile%"
+  if defined info3 echo %curcommand%
+  %curcommand%
+  call :funcend %0 funcgrp2
+goto :eof
