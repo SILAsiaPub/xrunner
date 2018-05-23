@@ -382,7 +382,7 @@ Sub SetCboxByIdFromIni(ini, section,key,idname)
 End Sub
 
 Sub presets()
-  call SetRadioFromIni(xrunini, "feedback","infolevel","infoid",5)
-  call SetCboxByIdFromIni(xrunini, "feedback","pauseatend","pauseatend")
+  'call SetRadioFromIni(xrunini, "feedback","infolevel","infoid",5)
+  'call SetCboxByIdFromIni(xrunini, "feedback","pauseatend","pauseatend")
   'call SetCboxByIdFromIni(xrunini, "setup","unittest","unittest")
 End Sub
