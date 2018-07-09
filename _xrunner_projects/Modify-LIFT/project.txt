@@ -1,0 +1,20 @@
+[variables]
+title=Modify LIFT file for DAB
+sourcelift=%projectpath%\source\lexicon.lift
+outputlift=%projectpath%\output\lexicon-mod.lift
+
+showsemanticentry=on
+showsemanticwordtab=on
+showsemanticnumbertab=off
+showsemanticnumberentry=on
+classification=category
+beforesemnumb=no.
+semanticclassificationsystem=semantic-domain-ddp4
+
+
+[a]
+button=Modify Lift so categories show in DAB.
+t=:inputfile "%sourcelift%"
+t=:xslt LIFT-show-semantic-domain-in-DAB.xslt
+t=:outputfile "%outputlift%"
+t=:start "%outputlift%"

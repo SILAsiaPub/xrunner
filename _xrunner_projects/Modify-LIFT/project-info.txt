@@ -1,0 +1,17 @@
+# Modify LIFT file for DAB
+
+## Modify trait categoreis
+
+This project is step up to modify the trait element that is not currently showing up in DAB built apps.
+
+It does this by running an XSLT transformation on the source LIFT file.
+
+It can do a number of things.
+
+* Add a note field with a label defined in the project.txt file
+* Add some reversal fields to generate a tab at the top like a language tab to provide another index.
+  * One reversal is for the semantic category by name
+  * The other is for the semantic category by number
+* The transformation preserves the original trait element and its attributes.
+* All other fields are just copied from the LIFT file.
+
