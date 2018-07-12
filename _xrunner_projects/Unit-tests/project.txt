@@ -19,26 +19,14 @@ tz50=:var vname vvalue
 tz51=echo vname vvalue
 tcount=0
 infolevel=0
-pauseatend=
+unittest=on
 [a]
 button=Run all tests
-t=:start xrun "%projectpath%\project.txt" "" 0 pause unittest
-
-[i]
-button=test :outfile
-t=:start xrun "%projectpath%\project.txt" i 0 pause unittest
-ut=:outfile "%expectfile1%" "%ptestfile1%" "%ptestfile2%" "%% x 2 var in project.txt"
-ut=:outfile "%expectfile2%" "" "%ptestfile2%" "%% x 2 no var1 in project.txt"
-ut=:outfile "%expectfile1%" "!ptestfile1!" "!ptestfile2!" "%% + ^^! var in project.txt"
-ut=:outfile "%expectfile2%" "" "!ptestfile2!" "%% + ^^^! exclamation var in project.txt"
-ut=:outfile "%expectfile1%" "%etestfile1%" "%etestfile2%" "^^! exclamation + %% var in project.txt"
-ut=:outfile "%expectfile2%" "" "%etestfile2%" "^^! exclamation + %% var in project.txt"
-ut=:outfile "%expectfile1%" "!etestfile1!" "!etestfile2!" "exclamation x 2 var in project.txt"
-ut=:outfile "%expectfile2%" "" "!etestfile2!" "exclamation x 2 var in project.txt"
+t=:unittest
+xt=:start xrun "%projectpath%\project.txt" "" 0 pause unittest
 
 [b]
 button=check :checkdir    
-t=:start xrun "%projectpath%\project.txt" b 0 pause unittest
 ut=:checkdir "%expectpath1%" "%ptestfile1%" "%% x 2 var in project.txt"
 ut=:checkdir "%expectpath1%" "!ptestfile1!" "%% + ^^! var in project.txt"
 ut=:checkdir "%expectpath1%" "%etestfile1%" "^^! exclamation + %% var in project.txt"
@@ -48,7 +36,6 @@ ut=:checkdir "%expectpath1%" "!etestpath1!" "exclamation x 2 var in project.txt"
 
 [c]
 button=check :var
-t=:start xrun "%projectpath%\project.txt" c 0 pause unittest
 ut=:var "val, %expectfile1%" val "%ptestfile1%" "%% x 2 var in project.txt"   
 ut=:var "val, %expectfile1%" val "!ptestfile1!" "%% + exc var in project.txt" 
 ut=:var "val, %expectpath1%" val "%etestpath1%" "exc + %% var in project.txt"         
@@ -58,16 +45,14 @@ ut=:var "val, %expectpath1%" val "!etestpath1!" "exc x 2 var in project.txt"
 
 [d]
 button=check :command2var
-t=:start xrun "%projectpath%\project.txt" d 0 pause unittest
-ut=:command2var "where java, javapath, C:\Program Files\Java\jdk1.8.0_101\bin\java.exe" "where java" javapath "Java test"
-ut=:command2var "where xcopy, javapath, C:\Windows\System32\xcopy.exe" "where xcopy" javapath "Java test"
-ut=:command2var "dir /b C:\Windows\System32\xcopy.*, diroutput, xcopy.exe" "dir /b C:\Windows\System32\xcopy.*" diroutput "dir test"
-ut=:command2var "echo hello world, hello, hello world" "echo hello world" hello "echo test"
+ut=:command2var "where, javapath, C:\Program Files\Java\jdk1.8.0_101\bin\java.exe" "where java" javapath "Java test"
+ut=:command2var "where, javapath, C:\Windows\System32\xcopy.exe" "where xcopy" javapath "Java test"
+ut=:command2var "dir, diroutput, xcopy.exe" "dir /b C:\Windows\System32\xcopy.*" diroutput "dir test"
+ut=:command2var "echo, hello, hello world" "echo hello world" hello "echo test"
 
 
 [e]
 button=check :v2
-t=:start xrun "%projectpath%\project.txt" e 0 pause unittest
 ut=:v2 "%expectfile1%" val "%ptestfile1%" "%% x 2 var in project.txt"   
 ut=:v2 "%expectfile1%" val "!ptestfile1!" "%% + exclamation var in project.txt" 
 ut=:v2 "%expectpath1%" val "%etestpath1%" "%% x 2 var in project.txt"         
@@ -76,58 +61,50 @@ ut=:v2 "%expectpath1%" val "!etestpath1!" "exclamation x 2 var in project.txt"
 
 [f]
 button= check :setinfolevel
-t=:start xrun "%projectpath%\project.txt" f 0 pause unittest
-ut=:setinfolevel " , , , , , {---,        ----}" 0 " nothing yet"
-ut=:setinfolevel " on, , , , , {---,        ----}" 1 " nothing yet"
-ut=:setinfolevel " on, on, , , , {---,        ----}" 2 " nothing yet"
-ut=:setinfolevel " on, on, on, , , {---,        ----}" 3 " nothing yet"
-ut=:setinfolevel " on, on, on, on, , {---,        ----}" 4 " nothing yet"
-ut=:setinfolevel " on, on, on, on, on, {---,        ----}" 5 " nothing yet"
+ut=:setinfolevel "0, , , , , , {---,        ----}" 0 " nothing yet"
+ut=:setinfolevel "1, on, , , , , {---,        ----}" 1 " nothing yet"
+ut=:setinfolevel "2, on, on, , , , {---,        ----}" 2 " nothing yet"
+ut=:setinfolevel "3, on, on, on, , , {---,        ----}" 3 " nothing yet"
+ut=:setinfolevel "4, on, on, on, on, , {---,        ----}" 4 " nothing yet"
+ut=:setinfolevel "5, on, on, on, on, on, {---,        ----}" 5 " nothing yet"
 
 
 [g]
 button=check :drivepath
-t=:start xrun "%projectpath%\project.txt" g 0 pause unittest
 ut=:drivepath "%expectpath1%" "%ptestfile1%" "%% x 2 var in project.txt"
 
 
 [h]
 button=Checking :main :taskgroup 
-t=:start xrun "%projectpath%\project.txt" h 0 pause unittest
 ut=:main "-,h,th" "h" "single group"
-ut=:main "-,,ta,tb,tc,td,te,tf,tg,th,ti,tj" "" "all groups"
+ut=:main "-,th" "" "all groups"
 ut=:taskgroup "th" "th" "core test this one would return up to the maximum number of tasks but that is not needed here"
 
-xt=:task " tz50, :, :var vname vvalue, call" "tz50" " not sure"
-xt=:task " tz51, e, echo vname vvalue, " "tz51" " not sure"
+[i]
+button=test :outfile
+ut=:outfile "%expectfile1%" "%ptestfile1%" "%ptestfile2%" "%% x 2 var in project.txt"
+ut=:outfile "%expectfile2%" "" "%ptestfile2%" "%% x 2 no var1 in project.txt"
+ut=:outfile "%expectfile1%" "!ptestfile1!" "!ptestfile2!" "%% + ^^! var in project.txt"
+ut=:outfile "%expectfile2%" "" "!ptestfile2!" "%% + ^^^! exclamation var in project.txt"
+ut=:outfile "%expectfile1%" "%etestfile1%" "%etestfile2%" "^^! exclamation + %% var in project.txt"
+ut=:outfile "%expectfile2%" "" "%etestfile2%" "^^! exclamation + %% var in project.txt"
+ut=:outfile "%expectfile1%" "!etestfile1!" "!etestfile2!" "exclamation x 2 var in project.txt"
+ut=:outfile "%expectfile2%" "" "!etestfile2!" "exclamation x 2 var in project.txt"
 
 [j]
 button=Checking :funcend  for info levels 0, 1, 3
-t=:loopstring "0 1 3" :sub sub-ja
+ut=:funcend ":xslt, , , , color 06" :xslt "checking logic, no outfile and infolevel 0"
+utt=:var info1 on
+ut=:funcend ":xslt, on, , , color 06" ":xslt" " checkin logic, no outfile and infolevel 1"
+utt=:var info3 on
+ut=:funcend ":xslt, on, on, , color 06,        ----} :xslt" :xslt " checkin logic, no outfile and infolevel 3"
+utt=:var info1
+utt=:var info3 
+utt=:var outfile "C:\programs\xrunner\scripts\variable2xslt-2.xslt"
+ut=:funcend ":xslt, , " :xslt "checking logic, with outfile and infolevel 0"
+utt=:var info1 on
+ut=:funcend ":xslt, on, , Created: C:\programs\xrunner\scripts\variable2xslt-2.xslt" ":xslt" " checkin logic, with outfile and infolevel 1"
+utt=:var  info3 on
+ut=:funcend ":xslt, on, on, Created: C:\programs\xrunner\scripts\variable2xslt-2.xslt, ,        ----} :xslt" :xslt " checkin logic, with outfile and infolevel 3"
 
-[sub-ja]
-t=:start xrun "%projectpath%\project.txt" j%sub1% %sub1% pause unittest
-
-[j0]
-ut=:funcend ":xslt, , , " :xslt "checking logic"
-[j1]
-ut=:funcend ":xslt, Created: %outfile%, , " ":xslt" " checkin logic"
-[j3]
-ut=:funcend ":xslt, Created: scripts\project.xslt, color 06,        ----} :xslt" :xslt " checkin logic"
-
-[k]
-button=Checking :funcend 
-t=:start xrun "%projectpath%\project.txt" k 1 pause unittest
-
-
-[l]
-button=Checking :funcend 4
-t=:start xrun "%projectpath%\project.txt" l 4 pause unittest
-
-
-[m]
-button=Checking :funcend no outfile
-t=set outfile
-t=:start xrun "%projectpath%\project.txt" m 0 pause unittest
-ut=:funcend ":xslt, , color 06, " ":xslt" " checking logic"
 
