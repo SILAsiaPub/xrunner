@@ -30,8 +30,13 @@ Source: "LICENSE"; DestDir: "{app}"
 Source: "scripts\*.xslt"; DestDir: "{#scripts}"
 Source: "scripts\*.cct"; DestDir: "{#scripts}"
 Source: "setup\*.html"; DestDir: "{app}\setup"
-Source: "setup\*.ini"; DestDir: "{app}\setup"
-Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Unit-tests"  ;  Check: FileDoesNotExist('{app}\_Xrunner_Projects\Unit-tests\project.txt');
+;Source: "setup\*.ini"; DestDir: "{app}\setup"
+Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Unit-tests"  ;
+; Modify-LIFT
+Source: "_Xrunner_Projects\Modify-LIFT\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT"  ;
+Source: "_Xrunner_Projects\Modify-LIFT\scripts\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT\scripts"  ;
+Source: "_Xrunner_Projects\Modify-LIFT\source\*.txt"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT\source"  ;
+; tools
 Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
 ;Source: "..\..\..\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
 Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
@@ -49,6 +54,22 @@ Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall ru
 
 [Dirs]
 Name: "{app}\_Xrunner_Projects\Demos"
+Name: "{app}\_Xrunner_Projects\Modify-LIFT"
+
+[INI]
+;The following line is different to how it is tested on the computer
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "projecthome"; String: "C:\programs\xrunner\_xrunner_projects"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "taskgroup_list"; String: "a b c d e f g h i j k l m n o p q r s t u v w x y z"; Flags: createkeyifdoesntexist 
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "java"; String: "java"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "ccw32"; String: "C:\Program Files (x86)\SIL\cc\Ccw32.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "zip"; String: "C:\Program Files\7-Zip\7z.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "editor"; String: "notepad"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "foxe"; String: "C:\Program Files (x86)\firstobject\foxe.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "prince"; String: "C:\Program Files (x86)\Prince\engine\bin\prince.exe"; Flags: createkeyifdoesntexist
+
+
+
 
 [Code]
 function FileDoesNotExist(file: string): Boolean;
