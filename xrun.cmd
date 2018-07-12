@@ -95,6 +95,11 @@ goto :eof
 :: Description: Sets up the variables and does some checking.
 :: Usage: call :setup
 :: Depends on: variableslist, xslt
+  if "%PUBLIC%" == "C:\Users\Public" (
+      rem if "%PUBLIC%" == "C:\Users\Public" above is to prevent the following command running on Windows XP
+      rem this still does not work for Chinese characters in the path
+      chcp 65001
+      )
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set /A count=0
   set scripts=
@@ -129,18 +134,20 @@ goto :eof
 :: Description: Runs Java with saxon to process XSLT transformations.
 :: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
 :: Depends on: inccount, infile, outfile
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount
   if defined scripts set script=%scripts%\%~1
   if not defined scripts set script=scripts\%~1
-  call :infile "%~2"
+  call :infile "%~2" %0
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
   set params=%~4
-  if not exist "%script%" echo Error: missing script: %script% & set missinginput=on
-  if defined missinginput color 06& echo %funcendtext% %0  & goto :eof
+  if not exist "%script%" call :fatal %0 "missing script: %script%"
+  if defined missinginput call :fatal %0 "infile not found!"
   if defined params set params=%params:'="%
   rem if defined params set params=%params:::==%
     )
+  if defined fatal goto :eof
   if defined info2 echo.
   if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
   %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
@@ -152,18 +159,21 @@ goto :eof
   :: Description: Privides interface to CCW32.
   :: Usage: call :cct script.cct ["infile.txt" ["outfile.txt"]]
 :: Depends on: inccount, infile, outfile
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount %count%
   set script=%~1
   set append=%~4
-  if not defined script echo CCT missing!& echo %funcendtext% %0 error1 & set utreturn=missing script & goto :eof
-  call :infile "%~2"
-  rem if not exist "%script%" echo Error: missing script file& echo %funcendtext% %0  & goto :eof
+  if not defined script call :fatal %0 "CCT script not supplied!"
+  if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!"
+  call :infile "%~2" %0
+  if defined missinginput  call :fatal %0 "infile not found!"
   set cctparam=-u -b -q -n
   if defined append set cctparam=-u -b -q -n -a
-  if not exist "%ccw32%" echo missing ccw32.exe file& echo %funcendtext% %0  & goto :eof
+  if not exist "%ccw32%" call :fatal %0 "missing ccw32.exe file"
   set scriptout=%script:.cct,=_%
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
+  if defined fatal goto :eof
   set curcommand="%ccw32%" %cctparam% -t "%script%" -o "%outfile%" "%infile%"
   if defined info2 echo. & echo %curcommand%
   set basepath=%cd%
@@ -179,10 +189,10 @@ goto :eof
   :: Usage: call :infile "%file%"
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set infile=%~1
+  set callingfunc=%~2
   if not defined infile set infile=%outfile%
   if exist "%infile%" set missinginput=
-  if not exist "%infile%" set missinginput=on
-  if not exist "%infile%" echo Error: missing input file to :infile
+  if not exist "%infile%" call :fatal %0 "infile not found at the location specified in :infile for %callingfunc%"
   if defined info3 echo Info: infile = %infile%
   set utreturn=%infile%
   if defined info3 echo %funcendtext% %0
@@ -293,6 +303,8 @@ goto :eof
 set infile=%outfile%
 set outfile=%~1
   set start=%~2
+  if defined fatal goto :eof
+  if exist "%outfile%" del /y "%outfile%"
 call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
   @if defined info1 if exist "%outfile%" echo. & echo Info: Moved to: %~1
@@ -305,6 +317,7 @@ goto :eof
 :: Description: A way of passing any commnand from a tasklist. It does not use infile and outfile.
 :: Usage: call :usercommand "copy /y 'c:\patha\file.txt' 'c:\pathb\file.txt'" ["path to run  command in"   "output file to test for"]
 :: Note: Single quotes get converted to double quotes before the command is used.
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 call :inccount
 set curcommand=%~1
@@ -332,6 +345,7 @@ if defined commandpath cd /D "%basepath%"
 goto :eof
 
 :appendfile
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   type "%~1" >> "%~2"
   set utreturn=%~1, %~2
@@ -343,12 +357,13 @@ goto :eof
 :: Usage: call :command2file "command" "outfile" ["commandpath"]
 :: Depends on: inccount, outfile
 :: Note: This command does its own expansion of single quotes to double quotes so cannont be fed directly from a ifdefined or ifnotdefined. Instead define a task that is fired by the ifdefined.
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 call :inccount
 set command=%~1
 set out=%~2
   if not defined command echo Info: missing command& echo %funcendtext% %0  & goto :eof
-call :outfile "%out%" "%projectpath%\xml\%group%-%count%-%~1-command2file.xml"
+  call :outfile "%out%" "%projectpath%\xml\%group%-%count%--command2file.xml"
 set commandpath=%~3
 set append=%~4
   if not defined append if "%commandpath%" == "append" set append=on
@@ -375,6 +390,7 @@ goto :eof
 :command2var
 :: Description: creates a variable from the command line
 :: Usage: call :command2var varname "command" "comment"
+  if defined fatal goto :eof
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 set commandline=%~1
 set varname=%~2
@@ -466,19 +482,13 @@ goto :eof
   set p8=%~8
   echo.
   rem check availability
-  if defined p1 call :command2var "where '%p1%'" whereout
-  if "%whereout:~0,4%" neq "INFO" (
-    set p1val=1
-  ) else if exist "%p1%" (
-    set p1val=1
-  )
-  if exist "%p2%" set p2val=1
-  set /A valid=%p1val%+%p2val%
-  if "%valid%" LSS "1" Echo Error: valid file not found to start! & goto :eof
+  set p1val=0
   set curcommand="%p1%" "%p2%" "%p3%" %p4% %p5% %p6% %p7% %p8%
-  rem run the command
-  if "%p1%" == "%p1: =%" echo start %curcommand% & start %curcommand%
-  if "%p1%" neq "%p1: =%" echo start "" %curcommand% & start "" %curcommand%
+  if not defined p1 if not exist "%p2%" Echo Error: valid file not found to start! & goto :eof
+  if defined p1 if defined p2 if not exist "%p2%" Echo Error: valid file2 not found to start! & goto :eof
+  if exist "%p1%" echo start "" %curcommand% & start "" %curcommand%
+  if not exist "%p1%" echo start %curcommand% & start %curcommand%
+  rem if "%p1%" neq "%p1: =%" echo start "" %curcommand% & start%curcommand%
   if defined info3 echo %funcendtext% %0
 goto :eof
 
@@ -727,7 +737,7 @@ goto :eof
 :: Usage: call :prince [infile [outfile [css]]]
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :infile %~1
-  call :outfile %~2
+  call :outfile "%~2" "%projectpath%\output\output.pdf" 
   set css=%~3
   if defined css set css=-s "%css%"
   set curcommand=call "%prince%" %css% "%infile%" -o "%outfile%"
@@ -815,7 +825,7 @@ goto :eof
 
 :encoding
 :: Description: to check the encoding of a file
-:: Usage: call :encoding file validate-or-check [validate-against]
+:: Usage: call :encoding file [validate-against]
 :: Depends on: :infile
   if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 if not defined encodingchecker echo Encoding not checked. & echo %funcendtext% %0 error1 &goto :eof
@@ -980,4 +990,23 @@ goto :eof
   EjectMedia %targetdrive%:
   if "%errorlevel%" neq "0" pause
   if defined info3 echo %funcendtext% %0
+goto :eof
+
+:jade
+:: Description: Create xml from jade(now pug) file
+  call:infile %~1
+  set outpath=%~2
+  call :checkdir "%outpath%"
+  call jade -o "%outpath%" "%infile%"
+goto :eof
+
+:fatal %0 "error message"
+:: Description: Used when fatal events occur
+set func=%~1
+set message=%~2
+color 06 
+echo Error: Task %count% %message%
+if defined info3 echo %funcendtext% %func% error 
+set utreturn=%message%
+set fatal=on
 goto :eof
