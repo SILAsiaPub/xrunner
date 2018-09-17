@@ -3,7 +3,8 @@
       <xsl:output method="xml" version="1.0" encoding="utf-8" indent="yes"/>
       <!-- Incorporated this into css-class2attribset.xslt
   -->
-      <xsl:include href="inc-file2uri.xslt"/><xsl:include href="project.xslt"/>
+      <xsl:include href="inc-file2uri.xslt"/>
+      <xsl:include href="project.xslt"/>
       <xsl:variable name="sourcetexturi" select="f:file2uri($sourcetextpath)"/>
       <xsl:template match="/">
             <xsl:choose>

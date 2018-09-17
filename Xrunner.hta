@@ -22,11 +22,12 @@
   <button class="tablinks" onclick="OpenTab('expert')" id="experttab"></button>
 </div>
 <!-- Tab content -->
- <form>
+  <div id="project" class="tabcontent active"> <form>
    <textarea name="DataArea" rows="18" cols=150 readonly></textarea>
    <input type="BUTTON" value="Edit project.txt file" onclick="call editFileExternal(projectTxt)" class="floatright halfbutton">
+   <input type="BUTTON" value="Refresh from source" onclick="reloadProject(projectTxt)" class="">
   </form>
-  <div id="project" class="tabcontent active">
+
   <div class="settings">
          Show feedback info  <br /> level 0
       <input id="infoid0" onclick="" type="radio" value="0" name="inforadio"> &ensp; level 1
@@ -98,7 +99,7 @@
  <form>
    <textarea name="InfoArea" rows="18" readonly  cols=88></textarea>
    <div class="floatright">
-   <input type="BUTTON" value="Refresh from source" onclick="call editFileExternal(projectInfo)" class="halfbutton">
+   <input type="BUTTON" value="Refresh from source" onclick="call reloadText(projectInfo)" class="halfbutton">
    <input type="BUTTON" value="Edit project-info.txt" onclick="call editFileExternal(projectInfo)" class="halfbutton">    
    </div>
 
@@ -113,6 +114,7 @@
 
   <button onclick="editFileExternal(projectInfo)" name="LoadValues" id="LoadValues" class="inibutton">Edit Project Info</button>
   <button onclick="editFileExternal(projectTxt)" name="LoadValues" id="LoadValues" class="inibutton">Edit project.txt</button>
+  <button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button>
   <button onclick="editFileExternal('setup/xrun.css')" name="LoadValues" id="LoadValues" class="inibutton">Edit css</button>
   <button onclick="editFileExternal('setup/xrun.vbs')" name="LoadValues" id="LoadValues" class="inibutton">Edit vbs</button>
   <button onclick="editFileExternal('setup/xrun.js')" name="LoadValues" id="LoadValues" class="inibutton">Edit javascript</button>

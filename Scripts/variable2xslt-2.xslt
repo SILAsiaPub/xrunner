@@ -13,22 +13,30 @@
       <xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" indent="yes"/>
       <xsl:output method="text" encoding="utf-8" name="cmd"/>
       <xsl:include href="inc-file2uri.xslt"/>
+      <xsl:include href="setup.xslt"/>
       <xsl:param name="projectpath"/>
+      <xsl:param name="unittest"/>
       <xsl:variable name="projectsource" select="concat($projectpath,'\project.txt')"/>
-      <xsl:variable name="project2source" select="concat($projectpath,'\project2.txt')"/>
       <xsl:variable name="projecttask" select="f:file2lines($projectsource)"/>
-      <xsl:variable name="project2task" select="f:file2lines($project2source)"/>
       <xsl:variable name="projecttext" select="f:file2text($projectsource)"/>
       <xsl:variable name="section" select="tokenize($projecttext,'\[')"/>
+      <xsl:variable name="project2source" select="concat($projectpath,'\project2.txt')"/>
+      <xsl:variable name="project2task" select="f:file2lines($project2source)"/>
+      <xsl:variable name="project2text" select="f:file2text($project2source)"/>
+      <xsl:variable name="section2" select="tokenize($project2text,'\[')"/>
       <xsl:variable name="cd" select="substring-before($projectpath,'\data\')"/>
       <xsl:variable name="varparser" select="'^([^;]+);([^ ]+)[ \t]+([^ \t]+)[ \t]+(.+)'"/>
-      <xsl:variable name="var" select="tokenize('var xvar',' ')"/>
       <xsl:variable name="projectcmd" select="f:file2uri(concat($projectpath,'\tmp\project.cmd'))"/>
-      <xsl:variable name="buttton-or-label" select="tokenize('button label',' ')"/>
+      <xsl:variable name="taskgroupprefix" select="''"/>
+      <xsl:variable name="lists" select="'_semicolon-list|_list|_underscore-list|_equal-list|_file-list'"/>
+      <!--<xsl:variable name="var" select="tokenize('var xvar',' ')"/>
+      <xsl:variable name="button-or-label" select="tokenize('button label',' ')"/>
       <xsl:variable name="nonunique" select="tokenize('t xt ut button label com',' ')"/>
       <xsl:variable name="unittestlabel" select="tokenize('ut utt',' ')"/>
+      <xsl:variable name="nontasksection" select="tokenize('variables project proj',' ')"/>
       <xsl:variable name="tasklabel" select="tokenize('t',' ')"/>
-      <xsl:variable name="lists" select="'_semicolon-list|_list|_underscore-list|_equal-list|_file-list'"/>
+      <xsl:variable name="batchsection" select="'variables project proj'"/>
+        -->
       <xsl:variable name="sq">
             <xsl:text>'</xsl:text>
       </xsl:variable>
@@ -96,8 +104,11 @@
                   </xsl:if>
             </xsl:element>
             <xsl:call-template name="projectcmd"/>
-             <xsl:call-template name="unittest"/> 
             <xsl:call-template name="taskgroup"/>
+            <xsl:call-template name="include"/>
+            <xsl:if test="$unittest = $true">
+                  <xsl:call-template name="unittest"/>
+            </xsl:if>
       </xsl:template>
       <xsl:template name="parseline">
             <xsl:param name="line"/>
@@ -109,7 +120,7 @@
                   <!-- when a task t= then ignore -->
                   <xsl:when test="$varname = $nonunique"/>
                   <!-- when a button or label ignore -->
-                  <xsl:when test="$varname = $buttton-or-label"/>
+                  <xsl:when test="$varname = $button-or-label"/>
                   <!-- <xsl:when test="matches($varname,'^\[.*$')"> -->
                   <xsl:otherwise>
                         <xsl:text>&#10;</xsl:text>
@@ -117,8 +128,11 @@
                               <xsl:with-param name="varname" select="$varname"/>
                               <xsl:with-param name="iscommand">
                                     <xsl:choose>
-                                          <xsl:when test="matches($vardata,'%[\w\d\-_]+[:\w\d=~,]*%')">
+                                          <xsl:when test="matches($vardata,'%[\w\d\-_]*%')">
                                                 <xsl:text>true</xsl:text>
+                                          </xsl:when>
+                                          <xsl:when test="matches($vardata,'%[\w\d\-_]+[:\w\d=~,]*%')">
+                                                <xsl:text></xsl:text>
                                           </xsl:when>
                                           <xsl:otherwise/>
                                     </xsl:choose>
@@ -239,8 +253,107 @@
       </xsl:template>
       <xsl:template name="projectcmd">
             <xsl:result-document href="{$projectcmd}" format="cmd">
+                  <xsl:call-template name="cmdsection">
+                        <xsl:with-param name="segment" select="$section"/>
+                  </xsl:call-template>
+                  <xsl:call-template name="cmdsection">
+                        <xsl:with-param name="segment" select="$section2"/>
+                  </xsl:call-template>
+            </xsl:result-document>
+      </xsl:template>
+      <xsl:template name="taskgroup">
+            <xsl:for-each select="$section">
+                  <!-- Now handle subs -->
+                  <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
+                  <xsl:variable name="sectname" select="$sectpart[1]"/>
+                  <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
+                  <xsl:if test="not($sectname = $reservedsection)">
+                        <xsl:call-template name="xrunfile">
+                              <xsl:with-param name="filename" select="$sectname"/>
+                              <xsl:with-param name="tasklist" select="$task"/>
+                        </xsl:call-template>
+                  </xsl:if>
+            </xsl:for-each>
+      </xsl:template>
+      <xsl:template name="include">
+            <xsl:if test="matches($projecttext,'[include]')">
                   <xsl:for-each select="$section">
+                        <!-- Now handle subs -->
                         <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
+                        <xsl:variable name="sectname" select="$sectpart[1]"/>
+                        <xsl:if test="$sectname = $includesection">
+                              <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
+                              <xsl:for-each select="$task">
+                                    <xsl:variable name="iname" select="substring-before(.,'=')"/>
+                                    <xsl:variable name="incgroup" select="substring-after(.,'=')"/>
+                                    <xsl:if test="$iname = $includelabel">
+                                          <xsl:variable name="incproject" select="concat($projectpath,'\include\',$incgroup,'.txt')"/>
+                                          <xsl:variable name="incprojects" select="concat($projecthome,'\include\',$incgroup,'.txt')"/>
+                                          <xsl:variable name="incxrunner" select="concat($xrunnerpath,'\include\',$incgroup,'.txt')"/>
+                                          <xsl:variable name="includetask">
+                                                <xsl:choose>
+                                                      <xsl:when test="unparsed-text-available(f:file2uri($incproject))">
+                                                            <xsl:sequence select="f:file2lines($incproject)"/>
+                                                      </xsl:when>
+                                                      <xsl:when test="unparsed-text-available(f:file2uri($incprojects))">
+                                                            <xsl:sequence select="f:file2lines($incprojects)"/>
+                                                      </xsl:when>
+                                                      <xsl:when test="unparsed-text-available(f:file2uri($incxrunner))">
+                                                            <xsl:sequence select="f:file2lines($incxrunner)"/>
+                                                      </xsl:when>
+                                                      <xsl:otherwise>
+                                                            <xsl:value-of select="'t=echo Error: Include is not found in: project, projects, xrunner'"/>
+                                                      </xsl:otherwise>
+                                                </xsl:choose>
+                                          </xsl:variable>
+                                          <xsl:call-template name="xrunfile">
+                                                <xsl:with-param name="filename" select="$incgroup"/>
+                                                <xsl:with-param name="tasklist" select="$includetask"/>
+                                          </xsl:call-template>
+                                    </xsl:if>
+                              </xsl:for-each>
+                        </xsl:if>
+                  </xsl:for-each>
+            </xsl:if>
+      </xsl:template>
+      <xsl:template name="unittest">
+            <xsl:for-each select="$section">
+                  <!-- Now handle subs -->
+                  <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
+                  <xsl:variable name="sectname" select="$sectpart[1]"/>
+                  <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
+                  <xsl:if test="not($sectname = $reservedsection)">
+                        <xsl:result-document href="{concat('ut',$sectname,'.xrun')}" format="cmd">
+                              <!-- <xsl:text>echo rem Auto generated file &gt; scripts\sub.txt &#10;</xsl:text> -->
+                              <xsl:for-each select="$task">
+                                    <xsl:variable name="tname" select="substring-before(.,'=')"/>
+                                    <xsl:variable name="tcmd" select="substring-after(.,'=')"/>
+                                    <xsl:choose>
+                                          <xsl:when test="$tname = $unittestlabel[1]">
+                                                <!-- <xsl:if test="substring($tcmd,1,1) = ':'"> -->
+                                                <xsl:text>call :test </xsl:text>
+                                                <!-- </xsl:if> -->
+                                                <xsl:value-of select="$tcmd"/>
+                                                <xsl:text>&#13;&#10;</xsl:text>
+                                                <!-- <xsl:text> &gt;&gt; scripts\sub.txt &#10;</xsl:text> -->
+                                          </xsl:when>
+                                          <xsl:when test="$tname = $unittestlabel[2]">
+                                                <xsl:text>call </xsl:text>
+                                                <xsl:value-of select="$tcmd"/>
+                                                <xsl:text>&#13;&#10;</xsl:text>
+                                          </xsl:when>
+                                          <xsl:otherwise/>
+                                    </xsl:choose>
+                              </xsl:for-each>
+                        </xsl:result-document>
+                  </xsl:if>
+            </xsl:for-each>
+      </xsl:template>
+      <xsl:template name="cmdsection">
+            <xsl:param name="segment"/>
+            <xsl:for-each select="$segment">
+                  <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
+                  <xsl:if test="$sectpart[1] = $batchsection">
                         <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
                         <xsl:variable name="taskline">
                               <xsl:for-each select="$task">
@@ -262,14 +375,6 @@
                               <xsl:choose>
                                     <xsl:when test="$tname = ''"/>
                                     <xsl:when test="$tname = $nonunique"/>
-                                    <xsl:when test="$tname = $buttton-or-label">
-                                          <xsl:text>set </xsl:text>
-                                          <xsl:value-of select="$tname"/>
-                                          <xsl:value-of select="$sectpart[1]"/>
-                                          <xsl:text>=</xsl:text>
-                                          <xsl:value-of select="$tcmd"/>
-                                          <xsl:text>&#13;&#10;</xsl:text>
-                                    </xsl:when>
                                     <xsl:when test="matches($tcmd,'[&amp;\|&gt;&lt;]')">
                                           <!-- Safety net for batch file creation to catch illegal characters -->
                                           <xsl:text>set </xsl:text>
@@ -283,69 +388,29 @@
                                     </xsl:otherwise>
                               </xsl:choose>
                         </xsl:for-each>
+                  </xsl:if>
+            </xsl:for-each>
+      </xsl:template>
+      <xsl:template name="xrunfile">
+            <xsl:param name="filename"/>
+            <xsl:param name="tasklist"/>
+            <xsl:result-document href="{concat('ut',$filename,'.xrun')}" format="cmd">
+                  <xsl:text>rem Auto generated file. Do not edit.</xsl:text>
+                  <xsl:for-each select="$tasklist">
+                        <xsl:variable name="tname" select="substring-before(.,'=')"/>
+                        <xsl:variable name="tcmd" select="substring-after(.,'=')"/>
+                        <xsl:choose>
+                              <xsl:when test="$tname = $tasklabel">
+                                    <xsl:if test="substring($tcmd,1,1) = ':'">
+                                          <xsl:text>call </xsl:text>
+                                    </xsl:if>
+                                    <xsl:value-of select="$tcmd"/>
+                                    <xsl:text>&#13;&#10;</xsl:text>
+                              </xsl:when>
+                              <xsl:otherwise/>
+                        </xsl:choose>
                   </xsl:for-each>
             </xsl:result-document>
-      </xsl:template>
-      <xsl:template name="taskgroup">
-            <xsl:for-each select="$section">
-                  <!-- Now handle subs -->
-                  <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
-                  <xsl:variable name="sectname" select="$sectpart[1]"/>
-                  <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
-                  <xsl:if test="matches($sectname,'sub-') or matches($sectname,'^[a-z]$')">
-                        <xsl:result-document href="{concat('t',$sectname,'.xrun')}" format="cmd">
-                              <!-- <xsl:text>echo rem Auto generated file &gt; scripts\sub.txt &#10;</xsl:text> -->
-                              <xsl:for-each select="$task">
-                                    <xsl:variable name="tname" select="substring-before(.,'=')"/>
-                                    <xsl:variable name="tcmd" select="substring-after(.,'=')"/>
-                                    <xsl:choose>
-                                          <xsl:when test="$tname = $tasklabel">
-                                                <xsl:if test="substring($tcmd,1,1) = ':'">
-                                                      <xsl:text>call </xsl:text>
-                                                </xsl:if>
-                                                <xsl:value-of select="$tcmd"/>
-                                                <xsl:text>&#13;&#10;</xsl:text>
-                                                <!-- <xsl:text> &gt;&gt; scripts\sub.txt &#10;</xsl:text> -->
-                                          </xsl:when>
-                                          <xsl:otherwise/>
-                                    </xsl:choose>
-                              </xsl:for-each>
-                        </xsl:result-document>
-                  </xsl:if>
-            </xsl:for-each>
-      </xsl:template>
-      <xsl:template name="unittest">
-            <xsl:for-each select="$section">
-                  <!-- Now handle subs -->
-                  <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
-                  <xsl:variable name="sectname" select="$sectpart[1]"/>
-                  <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
-                  <xsl:if test="not(matches($sectname,'variables'))">
-                        <xsl:result-document href="{concat('ut',$sectname,'.xrun')}" format="cmd">
-                              <!-- <xsl:text>echo rem Auto generated file &gt; scripts\sub.txt &#10;</xsl:text> -->
-                              <xsl:for-each select="$task">
-                                    <xsl:variable name="tname" select="substring-before(.,'=')"/>
-                                    <xsl:variable name="tcmd" select="substring-after(.,'=')"/>
-                                    <xsl:choose>
-                                          <xsl:when test="$tname = $unittestlabel[1]">
-                                                 <!-- <xsl:if test="substring($tcmd,1,1) = ':'"> -->
-                                                      <xsl:text>call :test </xsl:text>
-                                                 <!-- </xsl:if> -->
-                                                <xsl:value-of select="$tcmd"/>
-                                                <xsl:text>&#13;&#10;</xsl:text>
-                                                <!-- <xsl:text> &gt;&gt; scripts\sub.txt &#10;</xsl:text> -->
-                                          </xsl:when>
-                                          <xsl:when test="$tname = $unittestlabel[2]">
-                                                <xsl:text>call </xsl:text>
-                                                <xsl:value-of select="$tcmd"/>
-                                                <xsl:text>&#13;&#10;</xsl:text>
-                                          </xsl:when>
-                                          <xsl:otherwise/>
-                                    </xsl:choose>
-                              </xsl:for-each>
-                        </xsl:result-document>
-                  </xsl:if>
-            </xsl:for-each>
       </xsl:template>
       <xsl:function name="f:handlevar">
             <xsl:param name="string"/>

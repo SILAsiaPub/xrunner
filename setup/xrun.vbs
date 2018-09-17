@@ -5,8 +5,8 @@ Dim coFSO, objShell
 Set objShell = CreateObject("Wscript.Shell")
 Set coFSO = CreateObject("Scripting.FileSystemObject")
 
-Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo 
-Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist 
+Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo, setupvarxslt 
+Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist, program, xmleditor 
 tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
 boxlist = Array("Checkbox1","Checkbox2","Checkbox3","Checkbox4","Checkbox5")
 zero = 0
@@ -14,7 +14,9 @@ zero = CInt(zero)
 xrundata = "setup\"
 xrunini = "setup\xrun.ini"
 projPath =  ReadIni(xrunini,"setup","projecthome")
+setupvarxslt =  ReadIni(xrunini,"setup","xrunnerpath") & "\scripts\variable2xslt-3.xslt"
 texteditor =  ReadIni(xrunini,"tools","editor")
+xmleditor =  ReadIni(xrunini,"tools","xmleditor")
 projIni = "blank.txt"
 level = 0
 dquote = chr(34)
@@ -196,7 +198,7 @@ Function SelectFolder( myStartFolder )
     Dim objFolder, objItem, objShell, usea, useb
     ' Custom error handling
     On Error Resume Next
-    buttonHide()
+    'buttonHide()
     SelectFolder = vbNull
     ' Create a dialog object
     Set objShell  = CreateObject( "Shell.Application" )
@@ -207,7 +209,7 @@ Function SelectFolder( myStartFolder )
     projectTxt = SelectFolder & "\project.txt"
     If coFSO.FileExists(projectTxt) Then
     projectInfo = SelectFolder & "\project-info.txt"
-    buttonShow()
+    buttonShow(projectTxt)
     Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
       call editArea1(projectTxt)
       call editArea2(projectInfo)
@@ -229,20 +231,35 @@ Function RunCmd( bat, param )
     objShell.run(cmdline)
 End Function
 
-Function buttonShow()
-  dim x, group
+Function buttonShow(file)
+  dim x, group, grplen, buttonlen
   For x = 0 To Ubound(tskgrp)
     group = tskgrp(x)
-    If len(ReadIni(projectTxt,group,"label")) > zero Then
+    grplen = len(ReadIni(file,group,"label")) + len(ReadIni(file,group,"g"))
+    buttonlen = len(ReadIni(file,group,"button")) or len(ReadIni(file,group,"b"))
+    If grplen > zero Then
         document.getElementById("grouplabel" & group).style.display = "block"
-        document.getElementById("grouplabel" & group).InnerText = ReadIni(projectTxt,group,"label")
+        If len(ReadIni(file,group,"g")) > zero Then
+          document.getElementById("grouplabel" & group).InnerText = ReadIni(file,group,"g")
+        Else
+        document.getElementById("grouplabel" & group).InnerText = ReadIni(file,group,"label")
+        End If
+    Else
+        document.getElementById("grouplabel" & group).style.display = "none"
     End If
-    If len(ReadIni(projectTxt,group,"button")) > zero Then
-        document.getElementById("button" & group).style.display = "block"
-        document.getElementById("button" & group).InnerText = ReadIni(projectTxt,group,"button")
-    Elseif len(ReadIni(projectTxt,group,"t")) > zero Then
-      ' looks for tasks in the first 4 tasks
+    If len(Readini(file,group,"t")) > zero Then
       document.getElementById("button" & group).style.display = "block"
+      If len(ReadIni(file,group,"b")) > zero Then
+          document.getElementById("button" & group).InnerText = ReadIni(file,group,"b")
+      Else 
+    If len(ReadIni(file,group,"button")) > zero Then
+        document.getElementById("button" & group).InnerText = ReadIni(file,group,"button")
+    Else
+            document.getElementById("button" & group).InnerText = "Task group " & group
+        End If
+      End If  
+    Else
+        document.getElementById("button" & group).style.display = "none"
     End If
   Next
 End Function
@@ -301,6 +318,11 @@ Sub editFileExternal(file)
     objShell.run(cmdline)
 End Sub
 
+Sub editFileWithProgram(file,program)
+    cmdline = dquote & program & dquote & " " & file
+    objShell.run(cmdline)
+End Sub
+
 Function OpenTab(tabid)
     Dim tab, x, Elem, Elemon, Elemtab , Elemtc, ifrm, tabname, tabactive
     tab = Array("project","projectinfo","Xrunnerinfo","expert")
@@ -315,6 +337,17 @@ Function OpenTab(tabid)
 End Function
 
 'Const csFSpec = "E:\trials\SoTrials\answers\8841045\hta\29505115.txt"
+Function reloadText(file)
+  If coFSO.FileExists(file) Then
+     'Document.getElementsByTagName(namearea)(0).value = coFSO.OpenTextFile(file).ReadAll()
+     document.all.DataArea.value = coFSO.OpenTextFile(file).ReadAll()
+  End If
+End Function
+
+Function reloadProject(file)
+  call reloadText(file)
+  call buttonShow(file)
+End Function
 
 Sub editArea1(file)
   If coFSO.FileExists(file) Then
