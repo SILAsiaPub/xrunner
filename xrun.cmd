@@ -1015,7 +1015,7 @@ goto :eof
 
 :iniparse4xslt
 :: Description: Parse the = delimited data and write to xslt
-  @if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  @if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6"
   call :inccount
   set outfile=%~1
   set element=%~2
