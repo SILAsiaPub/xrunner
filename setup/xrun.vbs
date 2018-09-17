@@ -5,8 +5,8 @@ Dim coFSO, objShell
 Set objShell = CreateObject("Wscript.Shell")
 Set coFSO = CreateObject("Scripting.FileSystemObject")
 
-Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo, setupvarxslt 
-Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist, program, xmleditor 
+Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo, setupvarxslt, projectxslt 
+Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist, program, xmleditor, xrunxslt 
 tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
 boxlist = Array("Checkbox1","Checkbox2","Checkbox3","Checkbox4","Checkbox5")
 zero = 0
@@ -15,6 +15,8 @@ xrundata = "setup\"
 xrunini = "setup\xrun.ini"
 projPath =  ReadIni(xrunini,"setup","projecthome")
 setupvarxslt =  ReadIni(xrunini,"setup","xrunnerpath") & "\scripts\variable2xslt-3.xslt"
+xrunxslt =  ReadIni(xrunini,"setup","xrunnerpath") & "\scripts\xrun.xslt"
+'
 texteditor =  ReadIni(xrunini,"tools","editor")
 xmleditor =  ReadIni(xrunini,"tools","xmleditor")
 projIni = "blank.txt"

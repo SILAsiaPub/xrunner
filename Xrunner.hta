@@ -114,7 +114,6 @@
 
   <button onclick="editFileExternal(projectInfo)" name="LoadValues" id="LoadValues" class="inibutton">Edit Project Info</button>
   <button onclick="editFileExternal(projectTxt)" name="LoadValues" id="LoadValues" class="inibutton">Edit project.txt</button>
-  <button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button>
   <button onclick="editFileExternal('setup/xrun.css')" name="LoadValues" id="LoadValues" class="inibutton">Edit css</button>
   <button onclick="editFileExternal('setup/xrun.vbs')" name="LoadValues" id="LoadValues" class="inibutton">Edit vbs</button>
   <button onclick="editFileExternal('setup/xrun.js')" name="LoadValues" id="LoadValues" class="inibutton">Edit javascript</button>
@@ -123,6 +122,9 @@
   <button onclick="editFileExternal('Xrunner.hta')" name="LoadValues" id="LoadValues" class="inibutton">Edit hta</button>
   <button onclick="editFileExternal('xrun.cmd')" name="LoadValues" id="LoadValues" class="inibutton">Edit cmd expert only!</button> 
   <button onclick="call RunCmd('setup/md2html.cmd', 'C:\ProgramData\xrun\xrunner.md')" class="inibutton" >Update Xrunner.html</button>
+  <button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button>
+  <button onclick="call editFileWithProgram(xrunxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">View xrun.xslt</button>
+  <!--<button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button> -->
 </div>
 <div id="lastcmd"></div>
        </body>
