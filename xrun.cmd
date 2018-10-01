@@ -43,7 +43,6 @@ goto :eof
   if defined unittest for %%g in (%taskgroup%) do call :unittestaccumulate t%%g
   @if defined info3 echo %funcendtext% :main
   if defined pauseatend pause
-  if exist scripts\*.xrun del scripts\*.xrun
 goto :eof
 
 :taskgroup
@@ -98,6 +97,9 @@ goto :eof
       chcp 65001
       )
   @if defined info3 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  rem the following line cleans up from previous runs.
+  if not defined unittest if exist scripts\*.xrun del scripts\*.xrun
+  if not exist "%projectpath%\scripts\" md "%projectpath%\scripts"
   set /A count=0
   call :variableslist "%cd%\setup\xrun.ini"
   set utreturn=
@@ -303,8 +305,8 @@ set outfile=%~1
 call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
   @if defined info1 if exist "%outfile%" echo. & echo Info: Moved to: %~1
-  if "%var2%" == "start" start "" "%outfile%"
-  if "%var3%" == "start" start "" "%outfile%"
+  if "%var2%" == "start" if exist "%outfile%" start "" "%outfile%"
+  if "%var3%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var2%" == "validate" call :validate "%outfile%"
   if "%var3%" == "validate" call :validate "%outfile%"
   set utreturn=%infile%, %outfile%, %var2%, %var3%
@@ -522,10 +524,9 @@ goto :eof
   set group=%~1
   call :setup
   if defined group set taskgroup=%group%
-  FOR /F "eol=[ delims=`" %%q IN (scripts\ut%group%.xrun) DO %%q
+  FOR /F "eol=[ delims=`" %%q IN (scripts\ut-%group%.xrun) DO %%q
   @if defined info2 echo Info: unit test for scripts\ut%group%.xrun
   rem FOR %%g in (%taskgroup%) do call :unittestgroup ut%%g
-  if exist scripts\*.xrun del scripts\*.xrun
   @if defined info3 echo %funcendtext% %0
 goto :eof
 
@@ -963,7 +964,7 @@ goto :eof
 
 :copy2usb
 :: Description: Set up to cop files to USB drive and optionally format.
-:: Usage: call ::copy2usb source_path target_drive target_folder [format_first]
+:: Usage: call :copy2usb source_path target_drive target_folder [format_first]
   @if defined info3 echo %funcstarttext% %0 "%~1" %~2 "%~3" %~4
   set sourcepath=%~1
   set targetdrive=%~2
@@ -988,6 +989,17 @@ goto :eof
   call :checkdir "%outpath%"
   call jade -o "%outpath%" "%infile%"
 goto :eof
+
+:rho
+:: Description: Create xml from .rho file markup
+:: Usage: call :rho infile outfile
+  @if defined info3 echo %funcstarttext% %0 "%~1" "%~2"
+  call :infile "%~1"
+  call :outfile "%~2" "%proectpath%\output\rho-out.html"
+  call rho -i "%infile%" -o "%outfile%"
+  call :funcend %0
+goto :eof
+
 
 :fatal %0 "error message"
 :: Description: Used when fatal events occur

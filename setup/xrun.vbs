@@ -5,8 +5,8 @@ Dim coFSO, objShell
 Set objShell = CreateObject("Wscript.Shell")
 Set coFSO = CreateObject("Scripting.FileSystemObject")
 
-Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo, setupvarxslt, projectxslt 
-Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist, program, xmleditor, xrunxslt 
+Dim strPath, dquote, WScript, shell, cmdline, projIni, labelIni, strUserProfile, projPath, projectTxt, projectInfo, setupvarxslt, projectxslt, title 
+Dim xrunini, xrundata, zero, tskgrp, texteditor, bConsoleSw, info1, info2, info3, info4, info5, level, boxlist, program, xmleditor, xrunxslt, tasklen 
 tskgrp =  Array("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
 boxlist = Array("Checkbox1","Checkbox2","Checkbox3","Checkbox4","Checkbox5")
 zero = 0
@@ -238,7 +238,8 @@ Function buttonShow(file)
   For x = 0 To Ubound(tskgrp)
     group = tskgrp(x)
     grplen = len(ReadIni(file,group,"label")) + len(ReadIni(file,group,"g"))
-    buttonlen = len(ReadIni(file,group,"button")) or len(ReadIni(file,group,"b"))
+    buttonlen = len(ReadIni(file,group,"button")) + len(ReadIni(file,group,"b"))
+    tasklen = len(ReadIni(file,group,"t")) + len(ReadIni(file,group,"ut"))
     If grplen > zero Then
         document.getElementById("grouplabel" & group).style.display = "block"
         If len(ReadIni(file,group,"g")) > zero Then
@@ -249,7 +250,7 @@ Function buttonShow(file)
     Else
         document.getElementById("grouplabel" & group).style.display = "none"
     End If
-    If len(Readini(file,group,"t")) > zero Then
+    If tasklen > zero Then
       document.getElementById("button" & group).style.display = "block"
       If len(ReadIni(file,group,"b")) > zero Then
           document.getElementById("button" & group).InnerText = ReadIni(file,group,"b")
