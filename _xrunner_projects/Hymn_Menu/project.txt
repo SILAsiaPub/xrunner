@@ -1,0 +1,32 @@
+[variables]
+title=build contents menu
+app-name=test 2
+
+sourcetextfile=%projectpath%\source\SongBookUSFM.txt
+zipfile=%projectpath%\output-zip\menu-items.zip
+outputdir=%projectpath%\output
+home-menu_semicolon-list=Home;Number;Song Title;Song first line;Tune name;Contributed by;Song writer;Permission;Copyright
+menu_semicolon-list=Home;Number;Song Name;Song first line;Tune name;Contributors;Song writer;Permission;Copyright
+field_list=c s q s2 s1 s3 s5 s4
+field-subtitle_list=s c s s s s s s
+audio_list=0
+seed-number=500
+collection=KHB
+
+page-group_list=c s q1 q2 s2 s1 s3 s5 s4
+jump=200
+subpage-group_list=
+[a]
+button=Generate xml
+t=:inputfile "blank.xml"
+t=:xslt sfm2xml-general-pv.xslt
+t=:xslt generic-grouping-start-with-list.xslt "" "" "parentnode=database groupnodelist='id c'"
+t=:xslt kriol-parse-last-s.xslt
+t=:xslt kriol-join-xx.xslt
+t=:outputfile "%projectpath%\tmp\base.xml"
+[b]
+button=make contents.xml and zip for import
+t=:xslt RAB-make-contents-items.xslt "%projectpath%\tmp\base.xml"
+t=:outputfile "%projectpath%\output\contents.xml"
+t=:ifexist "%zipfile%" del "%zipfile%"
+t=:command "call '%zip%' a -tzip '%zipfile%' '*'"  "%projectpath%\output\" 
