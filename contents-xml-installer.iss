@@ -32,6 +32,7 @@ Source: "scripts\*.cct"; DestDir: "{#scripts}"
 Source: "setup\*.html"; DestDir: "{app}\setup"
 ;Source: "setup\*.ini"; DestDir: "{app}\setup"
 Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Unit-tests"  ;
+Source: "_Xrunner_Projects\Complete_Concordance_Builder\My-Concordance\*.*"; DestDir: "{app}\_Xrunner_Projects\Complete_Concordance_Builder\My-Concordance" ; Flags: recursesubdirs
 ; Modify-LIFT
 Source: "_Xrunner_Projects\Modify-LIFT\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT"  ;
 Source: "_Xrunner_Projects\Modify-LIFT\scripts\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT\scripts"  ;
@@ -41,7 +42,7 @@ Source: "_Xrunner_Projects\Hymn_Menu\*.*"; DestDir: "{app}\_Xrunner_Projects\Hym
 Source: "_Xrunner_Projects\Hymn_Menu\scripts\*.*"; DestDir: "{app}\_Xrunner_Projects\Hymn_Menu\scripts"  ;
 
 ; tools
-Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
+;Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
 ;Source: "..\..\..\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
 Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
 Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
@@ -54,7 +55,7 @@ Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}"
  [Run]
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\xrunner\saxon\saxon9he.jar');
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d '{app}\tools'";  Check: FileDoesNotExist('{app}\tools');
-Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
+;Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
 
 [Dirs]
 Name: "{app}\_Xrunner_Projects\Demos"
@@ -63,7 +64,6 @@ Name: "{app}\_Xrunner_Projects\Modify-LIFT"
 [INI]
 ;The following line is different to how it is tested on the computer
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "projecthome"; String: "C:\programs\xrunner\_xrunner_projects"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "xrunnerpath"; String: "C:\programs\xrunner"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "taskgroup_list"; String: "a b c d e f g h i j k l m n o p q r s t u v w x y z"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "button-or-label_list"; String: "button label"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "nonunique_list"; String: "t xt ut button label com"; Flags: createkeyifdoesntexist
