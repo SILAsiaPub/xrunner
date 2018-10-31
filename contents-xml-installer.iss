@@ -36,21 +36,25 @@ Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Un
 Source: "_Xrunner_Projects\Modify-LIFT\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT"  ;
 Source: "_Xrunner_Projects\Modify-LIFT\scripts\*.*"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT\scripts"  ;
 Source: "_Xrunner_Projects\Modify-LIFT\source\*.txt"; DestDir: "{app}\_Xrunner_Projects\Modify-LIFT\source"  ;
+; HymnBook contents menu
+Source: "_Xrunner_Projects\Hymn_Menu\*.*"; DestDir: "{app}\_Xrunner_Projects\Hymn_Menu"  ;
+Source: "_Xrunner_Projects\Hymn_Menu\scripts\*.*"; DestDir: "{app}\_Xrunner_Projects\Hymn_Menu\scripts"  ;
+
 ; tools
 Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
 ;Source: "..\..\..\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
 Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
 Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
-Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{pf32}\SIL\cc\ccw32.exe');
+Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\ccw32.exe');
 
 [Icons]
 Name: "{group}\Xrunner"; Filename: "{app}\xrunner.hta"; IconFilename: "{app}\setup\{#icon}"
 Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}" 
 
  [Run]
-Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
-Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d 'C:\Program Files (x86)\SIL\cc'";  Check: FileDoesNotExist('{pf32}\SIL\cc');
-Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
+Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\xrunner\saxon\saxon9he.jar');
+Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d '{app}\tools'";  Check: FileDoesNotExist('{app}\tools');
+;Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
 
 [Dirs]
 Name: "{app}\_Xrunner_Projects\Demos"
@@ -59,14 +63,27 @@ Name: "{app}\_Xrunner_Projects\Modify-LIFT"
 [INI]
 ;The following line is different to how it is tested on the computer
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "projecthome"; String: "C:\programs\xrunner\_xrunner_projects"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "taskgroup_list"; String: "a b c d e f g h i j k l m n o p q r s t u v w x y z"; Flags: createkeyifdoesntexist 
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "xrunnerpath"; String: "C:\programs\xrunner"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "taskgroup_list"; String: "a b c d e f g h i j k l m n o p q r s t u v w x y z"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "button-or-label_list"; String: "button label"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "nonunique_list"; String: "t xt ut button label com"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "unittestlabel_list"; String: "ut utt"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "tasklabel_list"; String: "t"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "batchsection_list"; String: "variables var project proj"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "includesection_list"; String: "include inc"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "guisection_list"; String: "gui"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "reservedsection_list"; String: "variables var project proj include inc gui"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "includelabel_list"; String: "i"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "true_list"; String: "true yes on 1"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "commentlabel"; String: "com"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "needsaxon"; String: "true"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "java"; String: "java"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "ccw32"; String: "C:\Program Files (x86)\SIL\cc\Ccw32.exe"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "ccw32"; String: "C:\programs\xrunner\tools\Ccw32.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\xrunner\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "zip"; String: "C:\Program Files\7-Zip\7z.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "editor"; String: "notepad"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "foxe"; String: "C:\Program Files (x86)\firstobject\foxe.exe"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "prince"; String: "C:\Program Files (x86)\Prince\engine\bin\prince.exe"; Flags: createkeyifdoesntexist
+;Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "foxe"; String: "C:\Program Files (x86)\firstobject\foxe.exe"; Flags: createkeyifdoesntexist
+;Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "prince"; String: "C:\Program Files (x86)\Prince\engine\bin\prince.exe"; Flags: createkeyifdoesntexist
 
 
 

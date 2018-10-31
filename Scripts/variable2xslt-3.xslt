@@ -13,9 +13,10 @@
       <xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" indent="yes"/>
       <xsl:output method="text" encoding="utf-8" name="cmd"/>
       <xsl:include href="inc-file2uri.xslt"/>
-      <xsl:include href="setup.xslt"/>
+      <xsl:include href="xrun.xslt"/>
       <xsl:param name="projectpath"/>
       <xsl:param name="unittest"/>
+      <xsl:param name="xsltoff"/>
       <xsl:variable name="projectsource" select="concat($projectpath,'\project.txt')"/>
       <xsl:variable name="projecttask" select="f:file2lines($projectsource)"/>
       <xsl:variable name="projecttext" select="f:file2text($projectsource)"/>
@@ -46,12 +47,14 @@
                   <xsl:variable name="task" select="tokenize($sectpart[2],'\r?\n')"/>
                   <xsl:choose>
                         <xsl:when test="$sectname = $batchsection">
+                               <!-- <xsl:if test="not($xsltoff = $true)"> -->
                               <xsl:call-template name="projectxslt">
                                     <xsl:with-param name="task" select="$task"/>
                               </xsl:call-template>
-                              <xsl:call-template name="projectcmd">
+                               <!-- </xsl:if> -->
+                              <!-- <xsl:call-template name="projectcmd">
                                     <xsl:with-param name="task" select="$task"/>
-                              </xsl:call-template>
+                              </xsl:call-template> -->
                         </xsl:when>
                         <xsl:when test="$sectname = $guisection">
                               <!--<xsl:call-template name="projectgui">
@@ -71,7 +74,7 @@
                                           <xsl:with-param name="tasklist" select="$task"/>
                                     </xsl:call-template>
                               </xsl:if>
-                              <xsl:if test="matches($sectpart[2],'\nut=')">
+                              <xsl:if test="matches($sectpart[2],'\nut=') or matches($sectpart[2],'t=:unittest')">
                                     <!-- unit tests -->
                                     <xsl:call-template name="unittestcmd">
                                           <xsl:with-param name="sectname" select="$sectname"/>
@@ -92,6 +95,21 @@
                   <xsl:attribute name="exclude-result-prefixes">
                         <xsl:text>f</xsl:text>
                   </xsl:attribute>
+                  <xsl:element name="xsl:include">
+                        <xsl:attribute name="href">
+                              <xsl:text>inc-file2uri.xslt</xsl:text>
+                        </xsl:attribute>
+                  </xsl:element>
+                  <xsl:element name="xsl:include">
+                        <xsl:attribute name="href">
+                              <xsl:text>inc-lookup.xslt</xsl:text>
+                        </xsl:attribute>
+                  </xsl:element>
+                  <xsl:element name="xsl:include">
+                        <xsl:attribute name="href">
+                              <xsl:text>xrun.xslt</xsl:text>
+                        </xsl:attribute>
+                  </xsl:element>
                   <xsl:element name="xsl:variable">
                         <!-- Define single quote -->
                         <xsl:attribute name="name">
@@ -117,14 +135,14 @@
                         </xsl:attribute>
                         <xsl:text>"</xsl:text>
                   </xsl:element>
-                  <xsl:element name="xsl:variable">
+                  <!--<xsl:element name="xsl:variable">
                         <xsl:attribute name="name">
                               <xsl:text>true</xsl:text>
                         </xsl:attribute>
                         <xsl:attribute name="select">
                               <xsl:text>tokenize('true yes on 1','\s+')</xsl:text>
                         </xsl:attribute>
-                  </xsl:element>
+                  </xsl:element> -->
                   <xsl:for-each select="$task">
                         <!-- handle each line of the file with = sign in it -->
                         <xsl:if test="matches(.,'=')">
@@ -208,8 +226,8 @@
             <xsl:param name="sectname"/>
             <xsl:param name="tasklist"/>
             <xsl:if test="string-length($sectname) gt 0">
-                  <xsl:result-document href="{f:file2uri(concat($xrunnerpath,'scripts/ut',$sectname,'.xrun'))}" format="cmd">
-                        <!-- <xsl:text>echo rem Auto generated file &gt; scripts\sub.txt &#10;</xsl:text> -->
+                  <xsl:result-document href="{f:file2uri(concat($xrunnerpath,'/scripts/ut-',$sectname,'.xrun'))}" format="cmd">
+                        <xsl:text>rem Auto generated file. Do not edit.&#10;</xsl:text>
                         <xsl:for-each select="$tasklist">
                               <xsl:variable name="tname" select="substring-before(.,'=')"/>
                               <xsl:variable name="tcmd" select="substring-after(.,'=')"/>
@@ -266,11 +284,14 @@
                   <xsl:with-param name="varname" select="$varname"/>
                   <xsl:with-param name="iscommand">
                         <xsl:choose>
-                              <xsl:when test="matches($vardata,'%[\w\d\-_]*%')">
+                              <!--<xsl:when test="matches($vardata,'%[\w\d\-_]+[:\w\d=~,]*%')">
                                     <xsl:text>true</xsl:text>
                               </xsl:when>
-                              <xsl:when test="matches($vardata,'%[\w\d\-_]+[:\w\d=~,]*%')">
-                                    <xsl:text></xsl:text>
+                              <xsl:when test="matches($vardata,'%[\w\d\-_]*%')">
+                                    <xsl:text>true</xsl:text>
+                              </xsl:when> -->
+                              <xsl:when test="matches($vardata,'%.+?%')">
+                                    <xsl:text>true</xsl:text>
                               </xsl:when>
                               <xsl:otherwise/>
                         </xsl:choose>
