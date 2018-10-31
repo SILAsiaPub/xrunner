@@ -52,7 +52,7 @@ or it can be written
 ``` 
 [a]
 button=Press this button to run this set of tasks
-t=:var inputfile "%sourcexml%"
+t=:inputfile "%sourcexml%"
 t=:xslt transfom.xslt
 t=:cct changetable.cct
 t=:outputfile "%outxml%" start

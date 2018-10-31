@@ -24,7 +24,7 @@ t=:xslt transfom.xslt "%sourcexml%"
 t=:cct changetable.cct "" "%outxml%"</code></pre><p>or it can be written</p>
 <pre><code>[a]
 button=Press this button to run this set of tasks
-t=:var inputfile "%sourcexml%"
+t=:inputfile "%sourcexml%"
 t=:xslt transfom.xslt
 t=:cct changetable.cct
 t=:outputfile "%outxml%" start</code></pre><ul><li>In the of the first task <code>t=:xslt transfom.xslt "%sourcexml%"</code> example has no output file specified because the file naming will happen automatically. In the second <code>t=:cct changetable.cct "" "%outxml%"</code> the empty double quotes use the output from the previous task.
