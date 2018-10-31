@@ -1,0 +1,44 @@
+This is a shell project that can be sued to make a complete Concordance of any group of USX files exported from Paratext.
+
+This project relies on:
+Java (that should be installed with the installation if not before)
+Saxon (that was installed with the installation)
+PrinceXML that needs to be installed seperately.
+
+In Paratext under Tools /  Advanced /Export USX.
+
+Move the exported USX files into the projects USX folder.
+
+Open the project.txt file in a text editor and edit ther relvant parts:
+line 2 title
+line 3 iso code
+line 5 subtitle if needed
+line 6 max-word-occurance-count this will remove words with more than the specified number of references.
+line 7 min-word-length specify the minimum word length to include
+
+line 9 compiler This is generic but can be changed to whatever you want.
+line 10 publisher dito
+line 11 publication-date
+
+lines 13-18 probably don't need to change.
+
+line 20 booknamessource needs to point to your BookNames.xml in your paratext project.
+
+line 21 include the books you want in the concordance
+line 22 usxpath this can be changed if you want to use where you exported the USX fiels too.
+line 23 getabbrev specifies the whether yuo want the "abbr" or "short" name found in BookNames.XML. That is found in Paratext's Scripture Reference Settings.
+
+Leave the rest alone.
+
+Now Double click on Xrunner.hta or go to Start / Publishing / Xrunner
+
+Click the top button: 1. Click here to select your project folder
+Click on Complete_Concordance_Builder
+Click on My-Concordance
+
+You can't edit in the white text box. It is there for reference.
+
+Click the first button in the bottom group: combine usx and group
+Then build either the HTML then PDF (PrinceXML must be installed) 
+Or generate the Concordance SFM for Paratext or if small maybe in SAB. 
+Large concordances do not work in th SAB app, or rather they are too slow.

@@ -54,7 +54,7 @@ Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}"
  [Run]
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\xrunner\saxon\saxon9he.jar');
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d '{app}\tools'";  Check: FileDoesNotExist('{app}\tools');
-;Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
+Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
 
 [Dirs]
 Name: "{app}\_Xrunner_Projects\Demos"

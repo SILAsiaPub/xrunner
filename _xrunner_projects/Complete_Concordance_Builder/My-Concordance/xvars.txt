@@ -1,0 +1,6 @@
+# this file handles variables that mess up in batch processing so imported to xslt this way
+# include in project var as ;var xvarset_file-list "%projectpath%\setup\xvars.txt"
+# To retrieve use: <xsl:variable name="ignorecharregex" select="f:lookupdefault($xvarset,'ignorecharregex','=',1,2,'[&#34;&#39;]')"/>
+ignorecharregex=['"]
+notwordcharregex=[^a-zA-Z\-'"]
+ayangan=< a,A< b,B< c,C< d,D< e,E< f,F< g,G< h,H< i,I< j,J < k,K< l,L< m,M< n,N< o,O< p,P< q,Q< r,R< s,S< t,T < u,U< v,V< w,W< x,X< y,Y< z,Z < ' < \u0022

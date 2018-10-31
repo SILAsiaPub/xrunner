@@ -15,6 +15,7 @@
       <xsl:include href="inc-file2uri.xslt"/>
       <xsl:include href="xrun.xslt"/>
       <xsl:param name="projectpath"/>
+      <xsl:param name="xrunnerpath"/>
       <xsl:param name="unittest"/>
       <xsl:param name="xsltoff"/>
       <xsl:variable name="projectsource" select="concat($projectpath,'\project.txt')"/>

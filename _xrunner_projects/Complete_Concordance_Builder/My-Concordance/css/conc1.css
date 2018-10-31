@@ -1,0 +1,66 @@
+/* CSS Document */
+@page {
+  size:letter portrait;
+  
+@top-center {
+        content: counter(page);
+        font-size: 9pt;
+        margin-top: 1em
+}
+    @top-left {
+        content: string(guideword, first);
+        direction: ltr;
+        font-family: "Charis SIL", sans-serif;   /* default Serif font */
+        font-weight: bold;
+        font-size: 9pt;
+        margin-top: 1em;
+    }
+    @top-right {
+        content: string(guideword, last);
+        direction: ltr;
+        font-family: "Charis SIL", sans-serif;   /* default Serif font */
+        font-weight: bold;
+        font-size: 9pt;
+        margin-top: 1em;
+    }
+}
+
+@page :first {
+
+  }
+/* 
+@page :first {
+  margin: 20mm 13mm 13mm 37mm;
+  @top-center { content: normal}
+  @top-left { content: normal}
+  @top-right { content: normal}
+}
+*/
+ @page:left {
+    margin: 20mm 37mm 13mm 13mm;
+}
+@page:right {
+  margin: 20mm 13mm 13mm 37mm;
+
+}
+
+
+body { 
+	font-size:9pt;
+                counter-reset: page 2;
+}
+.bk {font-style:italic}
+h3 {text-align:center}
+.content {
+	column-count: 3;   
+	column-gap: 1.5em; 
+	column-fill: balance;
+}
+p {
+       margin: 0 0 0 1em;
+       text-indent: -1em;
+	line-height:12pt;
+     }
+.word {string-set: guideword content();font-weight:bold;}    
+.chap {font-weight:600}
+.book { font-style:italic;}

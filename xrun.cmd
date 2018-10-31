@@ -176,14 +176,13 @@ goto :eof
   rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
   rem  echo off 
   rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
-  if not exist "%xrunnerpath%\scripts\xrun.xslt" call :fatal %0 "setup.xslt not created" & goto :eof
-  call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" unittest=%unittest% xsltoff=%xsltoff%
+  if not exist "scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
+  call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
   rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
   rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
   set scripts=%projectpath%\scripts
   rem call "%projectpath%\tmp\project.cmd"
-  if exist "scripts\project.xslt" move /Y "scripts\project.xslt" "%scripts%" >> log.txt
   if exist "%scripts%\project.xslt" if defined info2 echo Info: Created project.xslt from: project.txt
   call :setinfolevel %infolevel%
   @if defined info1 echo Info: Setup complete
