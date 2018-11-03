@@ -914,15 +914,20 @@ goto :eof
 :: Description: Provides copying with exit on failure
 :: Usage: call :copy infile outfile [append] [xcopy]
 :: Depends on: :infile, :outfile, :inccount :funcend
+:: Uddated: 2018-11-03
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :infile "%~1"
   call :outfile "%~2" "%~dpn1-copy%~x1"
+  set fn1=%~nx1
+  set fn2=%~nx2
   set appendfile=%~3
+  set xcopy=%~4
   if defined missinginput echo missing input file & goto :eof
   call :inccount
   if defined appendfile set curcommand=copy /y "%outfile%"+"%infile%" "%outfile%" 
   if not defined appendfile  set curcommand=copy /y "%infile%" "%outfile%"
-  if not defined xcopy set curcommand=xcopy /y/s "%infile%" "%outfile%"
+  if defined xcopy set curcommand=xcopy /y/s "%infile%" "%outfile%"
+  if defined xcopy if "%fn1%" == "%fn2%" set curcommand=xcopy /y/s "%infile%" "%outpath%"
   %curcommand%
   call :funcend %0
 goto :eof
