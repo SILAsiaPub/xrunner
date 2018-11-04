@@ -776,7 +776,7 @@ goto :eof
 :: Description: Used with func that out put files. Like XSLT, cct, command2file
 :: Usage: call :funcend %%0
   set funcname=%~1
-  @if defined info1 if exist "%outfile%" echo.
+  @if defined info3 if exist "%outfile%" echo.
   @if defined info1 if exist "%outfile%" echo Created: %outfile%
   @if defined info1 if exist "%outfile%" set utret3=Created: %outfile%
   @if defined outfile if not exist "%outfile%" color 06 & Echo Output file not created!
@@ -1142,3 +1142,123 @@ goto :eof
   set sectionskip=
   @if defined info4 echo %funcendtext% %0
 goto :eof  
+
+:usxexport
+:: Description: Loops through a list of books and extracts USX files.
+:: Usage: call :usxexport project "string" outpath
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set proj=%~1
+  set string=%~2
+  set outpath=%~3
+  rem HKLM\Software\Wow6432Node\ScrChecks\1.0\Settings_Directory
+  FOR %%s IN (%string%) DO call :usx %proj% "%%s" "%outpath%"
+  @if defined info4 echo %funcendtext% %0
+goto :eof
+
+:usx
+:: Description: Extract USX from Paratext
+:: Usage: call :usx
+  set proj=%~1
+  set book=%~2
+  set outpath=%~3
+  if "%book%" == "GEN" set bknumb=001
+  if "%book%" == "EXO" set bknumb=002
+  if "%book%" == "LEV" set bknumb=003
+  if "%book%" == "NUM" set bknumb=004
+  if "%book%" == "DEU" set bknumb=005
+  if "%book%" == "JOS" set bknumb=006
+  if "%book%" == "JDG" set bknumb=007
+  if "%book%" == "RUT" set bknumb=008
+  if "%book%" == "1SA" set bknumb=009
+  if "%book%" == "2SA" set bknumb=010
+  if "%book%" == "1KI" set bknumb=011
+  if "%book%" == "2KI" set bknumb=012
+  if "%book%" == "1CH" set bknumb=013
+  if "%book%" == "2CH" set bknumb=014
+  if "%book%" == "EZR" set bknumb=015
+  if "%book%" == "NEH" set bknumb=016
+  if "%book%" == "EST" set bknumb=017
+  if "%book%" == "JOB" set bknumb=018
+  if "%book%" == "PSA" set bknumb=019
+  if "%book%" == "PRO" set bknumb=020
+  if "%book%" == "ECC" set bknumb=021
+  if "%book%" == "SNG" set bknumb=022
+  if "%book%" == "ISA" set bknumb=023
+  if "%book%" == "JER" set bknumb=024
+  if "%book%" == "LAM" set bknumb=025
+  if "%book%" == "EZK" set bknumb=026
+  if "%book%" == "DAN" set bknumb=027
+  if "%book%" == "HOS" set bknumb=028
+  if "%book%" == "JOL" set bknumb=029
+  if "%book%" == "AMO" set bknumb=030
+  if "%book%" == "OBA" set bknumb=031
+  if "%book%" == "JON" set bknumb=032
+  if "%book%" == "MIC" set bknumb=033
+  if "%book%" == "NAM" set bknumb=034
+  if "%book%" == "HAB" set bknumb=035
+  if "%book%" == "ZEP" set bknumb=036
+  if "%book%" == "HAG" set bknumb=037
+  if "%book%" == "ZEC" set bknumb=038
+  if "%book%" == "MAL" set bknumb=039
+  if "%book%" == "MAT" set bknumb=040
+  if "%book%" == "MRK" set bknumb=041
+  if "%book%" == "LUK" set bknumb=042
+  if "%book%" == "JHN" set bknumb=043
+  if "%book%" == "ACT" set bknumb=044
+  if "%book%" == "ROM" set bknumb=045
+  if "%book%" == "1CO" set bknumb=046
+  if "%book%" == "2CO" set bknumb=047
+  if "%book%" == "GAL" set bknumb=048
+  if "%book%" == "EPH" set bknumb=049
+  if "%book%" == "PHP" set bknumb=050
+  if "%book%" == "COL" set bknumb=051
+  if "%book%" == "1TH" set bknumb=052
+  if "%book%" == "2TH" set bknumb=053
+  if "%book%" == "1TI" set bknumb=054
+  if "%book%" == "2TI" set bknumb=055
+  if "%book%" == "TIT" set bknumb=056
+  if "%book%" == "PHM" set bknumb=057
+  if "%book%" == "HEB" set bknumb=058
+  if "%book%" == "JAS" set bknumb=059
+  if "%book%" == "1PE" set bknumb=060
+  if "%book%" == "2PE" set bknumb=061
+  if "%book%" == "1JN" set bknumb=062
+  if "%book%" == "2JN" set bknumb=063
+  if "%book%" == "3JN" set bknumb=064
+  if "%book%" == "JUD" set bknumb=065
+  if "%book%" == "REV" set bknumb=066
+  if "%book%" == "TOB" set bknumb=067
+  if "%book%" == "JDT" set bknumb=068
+  if "%book%" == "ESG" set bknumb=069
+  if "%book%" == "WIS" set bknumb=070
+  if "%book%" == "SIR" set bknumb=071
+  if "%book%" == "BAR" set bknumb=072
+  if "%book%" == "LJE" set bknumb=073
+  if "%book%" == "S3Y" set bknumb=074
+  if "%book%" == "SUS" set bknumb=075
+  if "%book%" == "BEL" set bknumb=076
+  if "%book%" == "1MA" set bknumb=077
+  if "%book%" == "2MA" set bknumb=078
+  if "%book%" == "3MA" set bknumb=079
+  if "%book%" == "4MA" set bknumb=080
+  if "%book%" == "1ES" set bknumb=081
+  if "%book%" == "2ES" set bknumb=082
+  if "%book%" == "MAN" set bknumb=083
+  if "%book%" == "PS2" set bknumb=084
+  if "%book%" == "XXA" set bknumb=093
+  if "%book%" == "XXB" set bknumb=094
+  if "%book%" == "XXC" set bknumb=095
+  if "%book%" == "XXD" set bknumb=096
+  if "%book%" == "XXE" set bknumb=097
+  if "%book%" == "XXF" set bknumb=098
+  if "%book%" == "XXG" set bknumb=099
+  if "%book%" == "FRT" set bknumb=100
+  if "%book%" == "INT" set bknumb=107
+  if "%book%" == "GLO" set bknumb=109
+  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx" "%projectpath%\usx\%bknumb%%book%.usx"
+  if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
+  set curcommand="%getusx%" -r %proj% %book% 0 "%outfile%" -x
+  if defined info3 echo %curcommand%
+  call %curcommand%
+  call :funcend %0
+goto :eof
