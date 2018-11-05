@@ -1143,24 +1143,32 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof  
 
-:usxexport
+:paratextio
 :: Description: Loops through a list of books and extracts USX files.
-:: Usage: call :usxexport project "string" outpath
+:: Usage: call :paratextio project "book_list" [outpath] [write] [usfm]
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set proj=%~1
   set string=%~2
   set outpath=%~3
+  set write=%~4
+  set usfm=%~5
   rem HKLM\Software\Wow6432Node\ScrChecks\1.0\Settings_Directory
-  FOR %%s IN (%string%) DO call :usx %proj% "%%s" "%outpath%"
+  if defined info2 echo Info: Starting reading (or writing) from Paratext project %proj% 
+  FOR %%s IN (%string%) DO call :ptbook %proj% %%s "%outpath%" "%write%" "%usfm%"
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
-:usx
+:ptbook
 :: Description: Extract USX from Paratext
-:: Usage: call :usx
+:: Usage: call :ptbook project book [outpath] [write] [usfm]
   set proj=%~1
   set book=%~2
   set outpath=%~3
+  set write=%~4
+  set usfm=%~5
+  if not defined write set ptio=-r
+  if defined write set ptio=-w
+  if not defined usfm set usx=-x
   if "%book%" == "GEN" set bknumb=001
   if "%book%" == "EXO" set bknumb=002
   if "%book%" == "LEV" set bknumb=003
@@ -1255,9 +1263,9 @@ goto :eof
   if "%book%" == "FRT" set bknumb=100
   if "%book%" == "INT" set bknumb=107
   if "%book%" == "GLO" set bknumb=109
-  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx" "%projectpath%\usx\%bknumb%%book%.usx"
+  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx"
   if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
-  set curcommand="%getusx%" -r %proj% %book% 0 "%outfile%" -x
+  set curcommand="%rdwrtp8%" %ptio% %proj% %book% 0 "%outfile%" %usx%
   if defined info3 echo %curcommand%
   call %curcommand%
   call :funcend %0
