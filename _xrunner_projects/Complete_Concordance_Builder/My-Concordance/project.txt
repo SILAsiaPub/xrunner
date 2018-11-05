@@ -1,6 +1,7 @@
 [variables]
 title=LANGNAME Concordance
 iso=iso
+ptproj=XXX
 langname=%title: Concordance=%
 subtitle=
 max-word-occurance-count=1600
@@ -36,8 +37,11 @@ concfrontmattercss=../css/concfront.css
 xvarset_file-list=%projectpath%\xvars.txt
 incSeq=false
 
-
 [a]
+button=Get USX books from Paratext
+t=:paratextio %ptproj% "%include-book_list%" "%usxpath%"
+
+[b]
 button=combine usx, parse and sort
 t=:xslt usx2usx-context.xslt "blank.xml" "" ""
 t=:xslt bible-conc-add-context.xslt
