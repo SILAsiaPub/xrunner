@@ -83,7 +83,8 @@ Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\pr
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "zip"; String: "C:\Program Files\7-Zip\7z.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "editor"; String: "notepad"; Flags: createkeyifdoesntexist
 ;Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "foxe"; String: "C:\Program Files (x86)\firstobject\foxe.exe"; Flags: createkeyifdoesntexist
-;Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "prince"; String: "C:\Program Files (x86)\Prince\engine\bin\prince.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "prince"; String: "C:\Program Files (x86)\Prince\engine\bin\prince.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "rdwrtp8"; String: "C:\Program Files (x86)\Paratext 8\rdwrtp8.exe"; Flags: createkeyifdoesntexist
 
 
 
