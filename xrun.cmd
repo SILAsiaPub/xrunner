@@ -51,7 +51,8 @@ goto :eof
 :: Description: Loop that triggers each task in the group.
 :: Usage: call :taskgroup group
   @if defined info4 echo %funcstarttext% %0 %~1 %~2 %~3 %~4 %~5 %~6
-  @if defined fatal echo %funcendtext% %0 %~1 & goto :eof
+  @if defined fatal if defined info4 echo %funcendtext% %0 %~1 
+  @if defined fatal goto :eof
   set group=%~1
   set tgvar1=%~2
   set tgvar2=%~3
@@ -74,7 +75,7 @@ goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set list=%~1
   set sectiontoexit=%~2
-  @if defined info2 echo Info: Created variables from: %~nx1 
+  @if defined info2 echo Setup: variables from: %~nx1 
   set utreturn=%list%
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :variableset "%%q" %sectiontoexit%
   set sectionexit=
@@ -99,7 +100,7 @@ goto :eof
 
 :inisection
 :: Description: Handles variables list supplied in a file.
-:: Usage: call :variableslist list sectionget linefunc
+:: Usage: call :variableslist inifile sectionget linefunc
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set list=%~1
   set sectionget=%~2
@@ -107,7 +108,7 @@ goto :eof
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :%linefunc% "%%q" %sectionget%
   rem FOR /F "eol=] delims=`" %%q IN (%list%) DO set utreturn=!utreturn!, "%%q"
   set sectionstart=
-  @if defined info2 echo Info: Setup tasks from: %~nx1
+  @if defined info2 echo Setup: tasks created from: %~nx1
   set utreturn=%list%, %tasklinewrite%, !utreturn!
   @if defined info4 echo %funcendtext% %0
 goto :eof
@@ -157,35 +158,39 @@ goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   rem the following line cleans up from previous runs.
   if not defined unittest if exist scripts\*.xrun del scripts\*.xrun
-  if not exist "%projectpath%\scripts\" md "%projectpath%\scripts"
   set scripts=%projectpath%\scripts
+  if not exist "%scripts%" md "%scripts%"
   set /A count=0
   echo.
   call :variableslist "setup\xrun.ini"
-  call :variableslist "%projectpath%\project.txt" a
+  rem call :variableslist "%projectpath%\project.txt" a
   set utreturn=
   call :detectdateformat
   rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
   rem set maxsubcount=%defaulttaskcount%
   if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
   if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
-  call :ini2xslt "setup\xrun.ini" "scripts\xrun.xslt" iniparse4xslt tools
+  call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt tools
   copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
   rem create ?.xrun with batch
   rem  echo on 
   rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
   rem  echo off 
   rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
-  if not exist "scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
+  if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
   rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
   rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
   set scripts=%projectpath%\scripts
-  rem call "%projectpath%\tmp\project.cmd"
-  if exist "%scripts%\project.xslt" if defined info2 echo Info: Created project.xslt from: project.txt
+  if not exist "%scripts%\inc-lookup.xslt" copy "scripts\inc-lookup.xslt" "%scripts%\inc-lookup.xslt"
+  if not exist "%scripts%\inc-file2uri.xslt" copy "scripts\inc-file2uri.xslt" "%scripts%\inc-file2uri.xslt"
+  if not exist "%scripts%\inc-copy-anything.xslt" copy "scripts\inc-copy-anything.xslt" "%scripts%\inc-copy-anything.xslt"
+  call "%projectpath%\tmp\project.cmd"
+  if defined model call :loopfiles "%model%\*.*" :modelcheck "%model%"
+  if exist "%scripts%\project.xslt" if defined info2 echo Setup: project.xslt from: project.txt
   call :setinfolevel %infolevel%
-  @if defined info1 echo Info: Setup complete
+  @if defined info1 echo Setup: complete
   set /A count=0
   set utreturn=%scripts%
   @if defined info4 echo %funcendtext% %0
@@ -248,13 +253,13 @@ goto :eof
 
 :infile
 :: Description: If infile is specifically set then uses that else uses previous outfile.
-:: Usage: call :infile "%file%"
+:: Usage: call :infile "%file%" calling-func
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set infile=%~1
   set callingfunc=%~2
   @if not defined infile set infile=%outfile%
   @if exist "%infile%" set missinginput=
-  @if not exist "%infile%" call :fatal %0 "infile not found at the location specified in :infile for %callingfunc%"
+  @if not exist "%infile%" call :fatal %0 ":infile %~nx1 not found for %callingfunc%"
   @if defined info4 echo Info: infile = %infile%
   set utreturn=%infile%
   @if defined info4 echo %funcendtext% %0
@@ -264,24 +269,26 @@ goto :eof
 :: Description: If out file is specifically set then uses that else uses supplied name.
 :: Usage: call :outfile "C:\path\file.ext" "%cd%\tmp\%script%.xml" nocheck
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
-  set testoutfile=%~1
-  set testoutdp=%~dp1
-  set testoutnx=%~nx1
-  rem call :v2 testoutfile "!testoutfile!"
+  set toutfile=%~1
+  set outpath=%~dp1
+  rem the folloing is to preserve wildcards in the outfile. Since *.* when using %~nx1 becomes . not *.*
+  set outnx=!toutfile:%outpath%=!
+  echo %outnx%
   set defaultoutfile=%~2
   set defaultoutdp=%~dp2
   set defaultoutnx=%~nx2
   rem if defined info1 set defaultoutfile
   set nocheck=%~3
-  if defined testoutfile set outfile=%testoutfile%
-  if defined testoutfile set outpath=%testoutdp%
-  if not defined testoutfile set outfile=%defaultoutfile%
-  if not defined testoutfile set outpath=%defaultoutdp%
-  if not defined nocheck call :checkdir "%outpath%"
-  rem create prev copy if already exists
-  if exist "%outfile%" copy /y "%outfile%" "%outfile%.prev"  >> log.txt
-  if exist "%outfile%" del "%outfile%"
-  set utreturn=%outfile%, %testoutfile%, %defaultoutfile%
+  rem now if toutfile is not defined then use default value
+  if defined toutfile (set outfile=%toutfile%) else (set outfile=%defaultoutfile%)
+  if not defined toutfile set outpath=%defaultoutdp%
+  if not defined toutfile set outnx=%defaultoutnx%
+  if not defined nocheck if not exist "%outpath%" md "%outpath%"
+  rem remove %outfile%.prev if it exists. Works with wildcards
+  if exist "%outfile%.prev" del "%outfile%.prev"
+  rem if outfile exists then rename to file.ext.prev; this works with wild cards too now.
+  if exist "%outfile%" ren "%outfile%" "%outnx%.prev"
+  set utreturn=%outfile%, %defaultoutfile%, %nocheck%, %outpath%, %outnx%
   @if defined info4 echo.
   @if defined info4 echo Info: outfile = %outfile%
   @if defined info4 echo %funcendtext% %0
@@ -371,7 +378,7 @@ goto :eof
   if defined fatal goto :eof
   call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
-  @if defined info1 if exist "%outfile%" echo. & echo Info: Moved to: %~1
+  call :funcend %0
   if "%var2%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var3%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var2%" == "validate" call :validate "%outfile%"
@@ -429,7 +436,9 @@ goto :eof
   call :inccount
   set command=%~1
   set out=%~2
-  if not defined command echo Info: missing command& echo %funcendtext% %0  & goto :eof
+  if not defined command echo Info: missing command
+  if not defined command if not defined info4 echo %funcendtext% %0 
+  if not defined command goto :eof
   call :outfile "%out%" "%projectpath%\xml\%group%-%count%--command2file.xml"
   set commandpath=%~3
   set append=%~4
@@ -461,8 +470,12 @@ goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set commandline=%~1
   set varname=%~2
-  if not defined varname echo missing varname parameter& echo %funcendtext% %0  & goto :eof
-  if not defined commandline echo missing list parameter& echo %funcendtext% %0  & goto :eof
+  if not defined varname echo missing varname parameter
+  if not defined varname if defined info4 echo %funcendtext% %0
+  if not defined varname goto :eof
+  if not defined commandline echo missing list parameter
+  if not defined commandline if defined info4 echo %funcendtext% %0 
+  if not defined commandline goto :eof
   set commandline=%commandline:'="%
   if defined comment echo %comment%
   set utreturn=%commandline%, %varname%
@@ -486,8 +499,7 @@ goto :eof
 :: Usage: call :loopfiles file_specs sub_name [param[3-9]]
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
   set filespec=%~1
-  set func=%~2
-  set tgroup=%~2
+  set grouporfunc=%~2
   set par3=%~3
   set par4=%~4
   set par5=%~5
@@ -497,16 +509,26 @@ goto :eof
   set par9=%~9
   set numbparam=
   set appendparam=
-  if not defined func echo Error: Missing func parameter[2]& echo %funcendtext% %0  & goto :eof
-  if not defined filespec echo Error: Missing filespec parameter[1]& echo %funcendtext% %0  & goto :eof
-  if not exist "%filespec%" echo Error: Missing source files& echo %funcendtext% %0  & goto :eof
+  if not defined grouporfunc echo Error: Missing func parameter[2]
+  if not defined grouporfunc if defined info4 echo %funcendtext% %0 
+  if not defined grouporfunc goto :eof
+  if not defined filespec echo Error: Missing filespec parameter[1]
+  if not defined filespec if defined info4 echo %funcendtext% %0 
+  if not defined filespec goto :eof
+  if not exist "%filespec%" echo Error: Missing source files
+  if not exist "%filespec%" if defined info4 echo %funcendtext% %0 
+  if not exist "%filespec%" goto :eof
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
   for /L %%v in (3,1,9) Do call :last par %%v
   if defined info3 set numbparam
   if defined info4 if defined comment echo %last%
   if not defined unittest (
-    if "%func%" == ":sub" FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call %func% "%%s" %numbparam%
-    if "%func%" neq ":sub" FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call :taskgroup %tgroup% "%%s" %numbparam%
+    if "%grouporfunc:~0,1%" == ":" (
+        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call %grouporfunc% "%%s" %numbparam%
+      ) else (
+        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
+  )  
+    )  
   )  
   set utreturn= %filespec%, %sub%, %numbparam%, %last%
   if defined unittest FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO call :unittestaccumulate "%%s" %sub% %numbparam%
@@ -518,9 +540,9 @@ goto :eof
 :: Usage: call :loopstring action "string" ["comment"]
 :: Note: action may have multiple parts
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  rem echo on
   set string=%~1
-  set func=%~2
-  set tgroup=%~2
+  set grouporfunc=%~2
   set par3=%~3
   set par4=%~4
   set par5=%~5
@@ -528,18 +550,22 @@ goto :eof
   set par7=%~7
   set par8=%~8
   set par9=%~9
-  if not defined func echo Missing action parameter& echo %funcendtext% %0  & goto :eof
-  if not defined string echo Missing string parameter& echo %funcendtext% %0  & goto :eof
+  if not defined grouporfunc echo Missing action parameter
+  if not defined grouporfunc echo %funcendtext% %0 
+  if not defined grouporfunc goto :eof
+  if not defined string echo Missing string parameter
+  if not defined string echo %funcendtext% %0 
+  if not defined string goto :eof
   set numbparam=
   set appendparam=
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v 
   for /L %%v in (3,1,9) Do call :last par %%v
   if defined info3 set numbparam
-  if defined info4 if defined comment echo %last%
-  echo off
-  if "%func%" == ":sub" FOR %%s IN (%string%) DO call %func% "%%s" %numbparam%
-  if "%func%" neq ":sub" FOR %%s IN (%string%) DO call :taskgroup %tgroup% "%%s" %numbparam%
+  if defined info2 echo %last%
+  if "%grouporfunc:~0,1%" == ":" FOR %%s IN (%string%) DO call %grouporfunc% "%%s" %numbparam%
+  if "%grouporfunc:~0,1%" neq ":" FOR %%s IN (%string%) DO call :taskgroup %grouporfunc% "%%s" %numbparam%
   @if defined info4 echo %funcendtext% %0
+  rem @echo off
 goto :eof
 
 :start
@@ -726,7 +752,7 @@ goto :eof
 
 :sub
 :: Description: Starts a sub loop
-:: Usage: call :sub "subname" "['param1' ['param2' ['param3' ['param4']]]]"
+:: Usage: call :sub "subname" ['param1' ['param2' ['param3' ['param4']]]]
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
   set sub1=%~1
   set sub2=%~2
@@ -738,10 +764,12 @@ goto :eof
   Set sub8=%~8
   Set sub9=%~9
   set appendparam=
-  If not defined sub1 echo Error: Missing variable in par1. Exit function!& echo %funcendtext% %0  & goto :eof
-  If not defined sub2 echo Error: Missing subname in par2. Exit function!& echo %funcendtext% %0  & goto :eof
+  If not defined sub1 echo Error: Missing variable in par1. Exit function!& if defined info4 echo %funcendtext% %0  & goto :eof
+  If not defined sub2 echo Error: Missing variable in par2. Exit function!& if defined info4 echo %funcendtext% %0  & goto :eof
   rem now run all possible
   rem call scripts\%sub2%.cmd
+  if defined info3 echo Info: Starting :sub [%sub1%]
+  for /L %%v in (2,1,9) Do call :appendnumbparam numbparam sub %%v
   FOR /F "eol=[ delims=;" %%q IN (scripts\%sub2%.xrun) DO %%q
   rem the following 3 lines are for Unit testing.
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam sub %%v
@@ -776,9 +804,9 @@ goto :eof
 :: Description: Used with func that out put files. Like XSLT, cct, command2file
 :: Usage: call :funcend %%0
   set funcname=%~1
-  @if defined info3 if exist "%outfile%" echo.
-  @if defined info1 if exist "%outfile%" echo Created: %outfile%
-  @if defined info1 if exist "%outfile%" set utret3=Created: %outfile%
+  @if defined info2 if exist "%outfile%" echo.
+  @if defined info1 if exist "%outfile%" echo Output: %outfile%
+  @if defined info1 if exist "%outfile%" set utret3=Output: %outfile%
   @if defined outfile if not exist "%outfile%" color 06 & Echo Output file not created!
   @if defined outfile if not exist "%outfile%" set utret4=color 06
   @if defined outfile if exist "%outfile%" set utret4=
@@ -803,6 +831,14 @@ goto :eof
   %curcommand%
   set utreturn=%infile%, %outfile%, %css%, %prince%, %curcommand%
   call :funcend %0
+goto :eof
+
+:fb
+:: Description: Used to give common feed back
+  echo %~1: %~2 >> log\log.txt
+  if "%~1" == "info" Echo Info: %~2
+  if "%~1" == "error" Echo Error: %~2
+  if "%~1" == "output" Echo Output: %~2
 goto :eof
 
 :ifexist
@@ -835,10 +871,12 @@ goto :eof
   set param4=%~4
   set param5=%~5
   set param6=%~6
+  echo on
   if not defined testfile echo missing testfile parameter & echo %funcendtext% %0  & goto :eof
   if not defined action echo missing action parameter & echo %funcendtext% %0  & goto :eof
   set action=%action:'="%
   if not exist "%testfile%" "%action%" %param3% %param4% %param5% %param6%
+  echo off
   set utreturn=%testfile%, %action%, %param3%, %param4%, %param5%, %param6%
   @if defined info4 echo %funcendtext% %0
  if defined masterdebug call :funcdebug %0 end
@@ -855,7 +893,9 @@ goto :eof
   if not defined par3 call :outfile "%par2%" "%projectpath%\tmp\iconv-%~nx1"
   if defined par3 set infile=%par2%\%par1%
   if defined par3 call :outfile "%par3%\%par1%" "%projectpath%\tmp\iconv-%~nx1"
-  if not exist "%infile%" echo Error: missing infile = %infile% & echo %funcendtext% %0  & goto :eof
+  if not exist "%infile%" echo Error: missing infile = %infile% 
+  if not exist "%infile%" if defined info4 echo %funcendtext% %0 
+  if not exist "%infile%" goto :eof
   @if defined info2 echo.
   @if defined info2 echo call iconv -f CP1252 -t UTF-8 "%infile%"
   call iconv -f CP1252 -t UTF-8 "%infile%" > "%outfile%"
@@ -1084,7 +1124,7 @@ goto :eof
   set pauseatend=on
   echo Error: Task %count% %message%
   if defined message2 echo Error: Task %count% %message2%
-  @if defined info4 echo %funcendtext% %func% error 
+  @if defined info4 echo %func% error 
   set utreturn=%message%
   set fatal=on
 goto :eof
@@ -1127,7 +1167,7 @@ goto :eof
 
 :ini2xslt
 :: Description: Convert ini file to xslt
-:: Usage: call :ini2xslt file.ini function sectionexit
+:: Usage: call :ini2xslt file.ini output.xslt function sectionexit
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount
   call :infile "%~1" %0
@@ -1138,7 +1178,7 @@ goto :eof
   echo ^<xsl:stylesheet xmlns:f="myfunctions" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0" exclude-result-prefixes="f"^> > "%outfile%"
   FOR /F "eol=] tokens=1,2 delims==" %%u IN (%infile%) DO call :%function% "%outfile%" "%sectionexit%" xsl:variable name %%u select "%%v" 
   echo ^</xsl:stylesheet^> >> "%outfile%"
-  if defined info2 echo Info: Created xrun.xslt from: %~nx1
+  if defined info2 echo Setup: xrun.xslt from: %~nx1
   set sectionskip=
   @if defined info4 echo %funcendtext% %0
 goto :eof  
@@ -1261,8 +1301,13 @@ goto :eof
   if "%book%" == "XXF" set bknumb=098
   if "%book%" == "XXG" set bknumb=099
   if "%book%" == "FRT" set bknumb=100
+  if "%book%" == "BAK" set bknumb=101
+  if "%book%" == "OTH" set bknumb=102
   if "%book%" == "INT" set bknumb=107
+  if "%book%" == "CNC" set bknumb=108
   if "%book%" == "GLO" set bknumb=109
+  if "%book%" == "TDX" set bknumb=110
+  if "%book%" == "NDX" set bknumb=111
   if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx"
   if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
   set curcommand="%rdwrtp8%" %ptio% %proj% %book% 0 "%outfile%" %usx%
@@ -1270,3 +1315,47 @@ goto :eof
   call %curcommand%
   call :funcend %0
 goto :eof
+
+:tidy
+:: Description: Convert HTML to XHTML
+:: Usage: call :tidy ["infile"] ["outfile"] 
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  call :infile "%~1" %0
+  call :outfile "%~2" "%projectpath%\tmp\%group%-%coun%-html-tidy.html"
+  call :inccount
+  set curcommand="%tidy%" -asxhtml -utf8 -q -o "%outfile%" "%infile%"
+  if defined info2 echo %curcommand%
+  call %curcommand% > tidy-report.txt
+  call :funcend %0
+goto :eof
+
+:xquery
+:: Description: Provides interface to xquery by saxon9he.jar
+:: Usage: call :xquery scriptname ["infile"] ["outfile"] [allparam]
+:: Required variables: java saxon9
+:: Depends on: inccount infile outfile funcend fatal
+:: created: 2018-11-27
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  call :inccount
+  set scriptname=%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptname%.xml"
+  set allparam=%~4
+  set script=%projectpath%\scripts\%scriptname%
+  if not exist "%script%" call :fatal %0 "Missing xquery script!"
+  set param=%allparam:'="%
+  set curcommand="%java%" net.sf.saxon.Query -o:"%outfile%" -s:"%infile%" "%script%" %param%
+  if defined info2 echo %curcommand%
+  call %curcommand%
+  call :funcend %0
+goto :eof
+
+:modelcheck
+:: Description: Copies in files from Model project
+:: Usage: call :modelcheck "file.ext" "modelpath"
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  set infile=%~2\%~1
+  set outname=%~1
+  if not exist "%projectpath%\scripts\%outname%" copy "%infile%" "%projectpath%\scripts\" >> log.txt
+goto :eof
+   

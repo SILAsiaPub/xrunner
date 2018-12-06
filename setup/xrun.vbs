@@ -350,6 +350,7 @@ End Function
 Function reloadProject(file)
   call reloadText(file)
   call buttonShow(file)
+  Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
 End Function
 
 Sub editArea1(file)
