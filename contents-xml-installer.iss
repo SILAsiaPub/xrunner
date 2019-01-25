@@ -31,6 +31,8 @@ Source: "scripts\*.xslt"; DestDir: "{#scripts}"
 Source: "scripts\*.cct"; DestDir: "{#scripts}"
 Source: "setup\*.html"; DestDir: "{app}\setup"
 ;Source: "setup\*.ini"; DestDir: "{app}\setup"
+;Source: "docs\*.md"; DestDir: "{app}\docs"
+Source: "docs\*.html"; DestDir: "{app}\docs"
 Source: "_Xrunner_Projects\Unit-tests\*.*"; DestDir: "{app}\_Xrunner_Projects\Unit-tests"  ;
 Source: "_Xrunner_Projects\Complete_Concordance_Builder\My-Concordance\*.*"; DestDir: "{app}\_Xrunner_Projects\Complete_Concordance_Builder\My-Concordance" ; Flags: recursesubdirs
 ; Modify-LIFT
@@ -60,6 +62,7 @@ Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d '{app}\tools'";  
 [Dirs]
 Name: "{app}\_Xrunner_Projects\Demos"
 Name: "{app}\_Xrunner_Projects\Modify-LIFT"
+Name: "{app}\docs"
 
 [INI]
 ;The following line is different to how it is tested on the computer

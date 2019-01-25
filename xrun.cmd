@@ -69,6 +69,8 @@ goto :eof
 :: Description: Privides interface to CCW32.
 :: Usage: call :cct script.cct ["infile.txt" ["outfile.txt"]]
 :: Depends on: inccount, infile, outfile, funcend
+:: External program: ccw32.exe https://software.sil.org/cc/
+:: Required variable: ccw32
   if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount %count%
@@ -114,7 +116,7 @@ goto :eof
 :command
 :: Description: A way of passing any commnand from a tasklist. It does not use infile and outfile.
 :: Usage: call :usercommand "copy /y 'c:\patha\file.txt' 'c:\pathb\file.txt'" ["path to run  command in"   "output file to test for"]
-:: Depends on: inccount, checkdir, funcend
+:: Depends on: inccount, checkdir, funcend or any function
 :: External program: May use any external program
 :: Note: Single quotes get converted to double quotes before the command is used.
   if defined fatal goto :eof
@@ -147,7 +149,8 @@ goto :eof
 :command2file
 :: Description: Used with commands that only give stdout, so they can be captued in a file.
 :: Usage: call :command2file "command" "outfile" ["commandpath"]
-:: Depends on: inccount, outfile, funcend
+:: Depends on: inccount, outfile, funcend or any function
+:: External program: May call any external program
 :: Note: This command does its own expansion of single quotes to double quotes so cannont be fed directly from a ifdefined or ifnotdefined. Instead define a task that is fired by the ifdefined.
   if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
@@ -330,6 +333,8 @@ goto :eof
 :: Description: to check the encoding of a file
 :: Usage: call :encoding file [validate-against]
 :: Depends on: :infile
+:: External program: file.exe http://gnuwin32.sourceforge.net/
+:: Required variables: encodingchecker
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
 if not defined encodingchecker echo Encoding not checked. & echo %funcendtext% %0 error1 &goto :eof
 if not exist "%encodingchecker%" echo file.exe not found! %fileext% &echo Encoding not checked. & echo %funcendtext% %0 error2 & goto :eof
@@ -353,6 +358,21 @@ if defined validateagainst (
 ) 
   set utreturn=%testfile%, %validateagainst%, %fencoding%, %nameext%
   @if defined info4 echo %funcendtext% %0
+goto :eof
+
+:fatal
+:: Description: Used when fatal events occur
+:: Usage: call :fatal %0 "message 1" "message 2"
+  set func=%~1
+  set message=%~2
+  set message2=%~3
+  color 06 
+  set pauseatend=on
+  echo Fatal: Task %count% %message%
+  if defined message2 echo Fatal: Task %count% %message2%
+  @if defined info4 echo %func% error 
+  set utreturn=%message%
+  set fatal=on
 goto :eof
 
 :fb
@@ -488,6 +508,25 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:ini2xslt
+:: Description: Convert ini file to xslt
+:: Usage: call :ini2xslt file.ini output.xslt function sectionexit
+:: Depends on: inccount, infile, outfile.
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  call :inccount
+  call :infile "%~1" %0
+  call :outfile "%~2" "%projectpath%\scripts\xrun.xslt"
+  set function=%~3
+  set sectionexit=%~4
+  rem pause
+  echo ^<xsl:stylesheet xmlns:f="myfunctions" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0" exclude-result-prefixes="f"^> > "%outfile%"
+  FOR /F "eol=] tokens=1,2 delims==" %%u IN (%infile%) DO call :%function% "%outfile%" "%sectionexit%" xsl:variable name %%u select "%%v" 
+  echo ^</xsl:stylesheet^> >> "%outfile%"
+  if defined info2 echo Setup: xrun.xslt from: %~nx1
+  set sectionskip=
+  @if defined info4 echo %funcendtext% %0
+goto :eof  
+
 :iniline2var
 :: Description: Sets variables from one section
 :: Usage: call :variableset line sectionget
@@ -502,6 +541,33 @@ goto :eof
   if not defined sectionstart goto :eof
   if defined sectionstart set %line%
   @set utreturn=%utreturn%, %line%
+  @if defined info4 echo %funcendtext% %0
+goto :eof
+
+:iniparse4xslt
+:: Description: Parse the = delimited data and write to xslt . Skips sections and can exit when
+:: Usage: call :iniparse4xslt outfile sectionexit element att1name att1val att2name att2val
+:: Depends on: inccount
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6"
+  if defined sectionskip @if defined info4 echo %funcendtext% %0
+  if defined sectionskip goto :eof
+  call :inccount
+  set outfile=%~1
+  set sectionexit=%~2
+  set element=%~3
+  set att1name=%~4
+  set att1val=%~5
+  set att2name=%~6
+  set att2val=%~7
+  if "[%sectionexit%]" == "%att1val%" set sectionskip=on
+  if "%att1val:~0,1%" == "[" @if defined info4 echo %funcendtext% %0
+  if "%att1val:~0,1%" == "[" goto :eof
+  if defined att1name set attrib1=%att1name%="%att1val%"
+  if defined att1name set attriblist1=%att1name%="%att1val:_list=%"
+  if defined att2name set attrib2=%att2name%="'%att2val%'"
+  if defined att2name set attriblist2=%att2name%="tokenize($%att1val%,' ')"
+  echo   ^<%element% %attrib1% %attrib2%/^> >> "%outfile%"
+  if %att1val% neq %att1val:_list=% echo   ^<%element% %attriblist1% %attriblist2%/^> >> "%outfile%"
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
@@ -533,7 +599,8 @@ goto :eof
 :jade
 :: Description: Create html/xml from jade file (now pug) Still uses jade extension
 :: Usage: call :jade "infile"  "outfile"
-:: Depends on: inccount, infile, outfile, nameext, name, funcend and on externally on NodeJS-npm program jade
+:: Depends on: inccount, infile, outfile, nameext, name, funcend 
+:: External program: NodeJS npm program jade
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
   call :inccount
   call :infile %~1
@@ -665,6 +732,15 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:modelcheck
+:: Description: Copies in files from Model project
+:: Usage: call :modelcheck "file.ext" "modelpath"
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  set infile=%~2\%~1
+  set outname=%~1
+  if not exist "%projectpath%\scripts\%outname%" copy "%infile%" "%projectpath%\scripts\" >> log.txt
+goto :eof
+   
 :name
 :: Description: Returns a variable name containg just the name from the path.
   @if defined info4 echo %funcstarttext% %0, %~1
@@ -732,6 +808,22 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:paratextio
+:: Description: Loops through a list of books and extracts USX files.
+:: Usage: call :paratextio project "book_list" [outpath] [write] [usfm]
+:: Depends on: ptbook
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set proj=%~1
+  set string=%~2
+  set outpath=%~3
+  set write=%~4
+  set usfm=%~5
+  rem HKLM\Software\Wow6432Node\ScrChecks\1.0\Settings_Directory
+  if defined info2 echo Info: Starting reading (or writing) from Paratext project %proj% 
+  FOR %%s IN (%string%) DO call :ptbook %proj% %%s "%outpath%" "%write%" "%usfm%"
+  @if defined info4 echo %funcendtext% %0
+goto :eof
+
 :pause
 :: Description: Used in project.txt to pause the processing
   pause
@@ -742,6 +834,7 @@ goto :eof
 :: Usage: call :prince [infile [outfile [css]]]
 :: Depends on: infile, outfile, funcend
 :: External program: prince.exe  https://www.princexml.com/
+:: External program: prince
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :infile %~1
   call :outfile "%~2" "%projectpath%\output\output.pdf" 
@@ -751,6 +844,127 @@ goto :eof
   @if defined info2 echo %curcommand%
   %curcommand%
   set utreturn=%infile%, %outfile%, %css%, %prince%, %curcommand%
+  call :funcend %0
+goto :eof
+
+:ptbook
+:: Description: Extract USX from Paratext
+:: Usage: call :ptbook project book [outpath] [write] [usfm]
+:: Depends on: outfile, funcend
+:: External program: rdwrtp8.exe from https://pt8.paratext.org/
+:: Required variables: rdwrtp8
+  set proj=%~1
+  set book=%~2
+  set outpath=%~3
+  set write=%~4
+  set usfm=%~5
+  if not defined write set ptio=-r
+  if defined write set ptio=-w
+  if not defined usfm set usx=-x
+  if "%book%" == "GEN" set bknumb=001
+  if "%book%" == "EXO" set bknumb=002
+  if "%book%" == "LEV" set bknumb=003
+  if "%book%" == "NUM" set bknumb=004
+  if "%book%" == "DEU" set bknumb=005
+  if "%book%" == "JOS" set bknumb=006
+  if "%book%" == "JDG" set bknumb=007
+  if "%book%" == "RUT" set bknumb=008
+  if "%book%" == "1SA" set bknumb=009
+  if "%book%" == "2SA" set bknumb=010
+  if "%book%" == "1KI" set bknumb=011
+  if "%book%" == "2KI" set bknumb=012
+  if "%book%" == "1CH" set bknumb=013
+  if "%book%" == "2CH" set bknumb=014
+  if "%book%" == "EZR" set bknumb=015
+  if "%book%" == "NEH" set bknumb=016
+  if "%book%" == "EST" set bknumb=017
+  if "%book%" == "JOB" set bknumb=018
+  if "%book%" == "PSA" set bknumb=019
+  if "%book%" == "PRO" set bknumb=020
+  if "%book%" == "ECC" set bknumb=021
+  if "%book%" == "SNG" set bknumb=022
+  if "%book%" == "ISA" set bknumb=023
+  if "%book%" == "JER" set bknumb=024
+  if "%book%" == "LAM" set bknumb=025
+  if "%book%" == "EZK" set bknumb=026
+  if "%book%" == "DAN" set bknumb=027
+  if "%book%" == "HOS" set bknumb=028
+  if "%book%" == "JOL" set bknumb=029
+  if "%book%" == "AMO" set bknumb=030
+  if "%book%" == "OBA" set bknumb=031
+  if "%book%" == "JON" set bknumb=032
+  if "%book%" == "MIC" set bknumb=033
+  if "%book%" == "NAM" set bknumb=034
+  if "%book%" == "HAB" set bknumb=035
+  if "%book%" == "ZEP" set bknumb=036
+  if "%book%" == "HAG" set bknumb=037
+  if "%book%" == "ZEC" set bknumb=038
+  if "%book%" == "MAL" set bknumb=039
+  if "%book%" == "MAT" set bknumb=040
+  if "%book%" == "MRK" set bknumb=041
+  if "%book%" == "LUK" set bknumb=042
+  if "%book%" == "JHN" set bknumb=043
+  if "%book%" == "ACT" set bknumb=044
+  if "%book%" == "ROM" set bknumb=045
+  if "%book%" == "1CO" set bknumb=046
+  if "%book%" == "2CO" set bknumb=047
+  if "%book%" == "GAL" set bknumb=048
+  if "%book%" == "EPH" set bknumb=049
+  if "%book%" == "PHP" set bknumb=050
+  if "%book%" == "COL" set bknumb=051
+  if "%book%" == "1TH" set bknumb=052
+  if "%book%" == "2TH" set bknumb=053
+  if "%book%" == "1TI" set bknumb=054
+  if "%book%" == "2TI" set bknumb=055
+  if "%book%" == "TIT" set bknumb=056
+  if "%book%" == "PHM" set bknumb=057
+  if "%book%" == "HEB" set bknumb=058
+  if "%book%" == "JAS" set bknumb=059
+  if "%book%" == "1PE" set bknumb=060
+  if "%book%" == "2PE" set bknumb=061
+  if "%book%" == "1JN" set bknumb=062
+  if "%book%" == "2JN" set bknumb=063
+  if "%book%" == "3JN" set bknumb=064
+  if "%book%" == "JUD" set bknumb=065
+  if "%book%" == "REV" set bknumb=066
+  if "%book%" == "TOB" set bknumb=067
+  if "%book%" == "JDT" set bknumb=068
+  if "%book%" == "ESG" set bknumb=069
+  if "%book%" == "WIS" set bknumb=070
+  if "%book%" == "SIR" set bknumb=071
+  if "%book%" == "BAR" set bknumb=072
+  if "%book%" == "LJE" set bknumb=073
+  if "%book%" == "S3Y" set bknumb=074
+  if "%book%" == "SUS" set bknumb=075
+  if "%book%" == "BEL" set bknumb=076
+  if "%book%" == "1MA" set bknumb=077
+  if "%book%" == "2MA" set bknumb=078
+  if "%book%" == "3MA" set bknumb=079
+  if "%book%" == "4MA" set bknumb=080
+  if "%book%" == "1ES" set bknumb=081
+  if "%book%" == "2ES" set bknumb=082
+  if "%book%" == "MAN" set bknumb=083
+  if "%book%" == "PS2" set bknumb=084
+  if "%book%" == "XXA" set bknumb=093
+  if "%book%" == "XXB" set bknumb=094
+  if "%book%" == "XXC" set bknumb=095
+  if "%book%" == "XXD" set bknumb=096
+  if "%book%" == "XXE" set bknumb=097
+  if "%book%" == "XXF" set bknumb=098
+  if "%book%" == "XXG" set bknumb=099
+  if "%book%" == "FRT" set bknumb=100
+  if "%book%" == "BAK" set bknumb=101
+  if "%book%" == "OTH" set bknumb=102
+  if "%book%" == "INT" set bknumb=107
+  if "%book%" == "CNC" set bknumb=108
+  if "%book%" == "GLO" set bknumb=109
+  if "%book%" == "TDX" set bknumb=110
+  if "%book%" == "NDX" set bknumb=111
+  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx"
+  if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
+  set curcommand="%rdwrtp8%" %ptio% %proj% %book% 0 "%outfile%" %usx%
+  if defined info3 echo %curcommand%
+  call %curcommand%
   call :funcend %0
 goto :eof
 
@@ -776,7 +990,8 @@ goto :eof
 :rho
 :: Description: Create xml from .rho file markup
 :: Usage: call :rho infile outfile
-:: Depends on: infile, outfile, funcend and on NodeJS NPM program Rho
+:: Depends on: infile, outfile, funcend NodeJS NPM program Rho
+:: External program: NodeJS npm program Rho
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
   call :infile "%~1"
   call :outfile "%~2" "%proectpath%\output\rho-out.html"
@@ -1061,6 +1276,22 @@ goto :eof
   if not defined unittest if defined funcgrp4 echo %funcendtext% %0
 goto :eof
 
+:tidy
+:: Description: Convert HTML to XHTML
+:: Usage: call :tidy ["infile"] ["outfile"] 
+:: Depends on: infile, outfile, inccount, funcend
+:: External program: tidy.exe http://tidy.sourceforge.net/
+:: Required variables: tidy
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  call :infile "%~1" %0
+  call :outfile "%~2" "%projectpath%\tmp\%group%-%coun%-html-tidy.html"
+  call :inccount
+  set curcommand="%tidy%" -asxhtml -utf8 -q -o "%outfile%" "%infile%"
+  if defined info2 echo %curcommand%
+  call %curcommand% > tidy-report.txt
+  call :funcend %0
+goto :eof
+
 :time
 :: Description: Retrieve time in several shorter formats than %time% provides
 :: Usage: call :time
@@ -1111,6 +1342,19 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:validate
+:: Description: Validate an XML file
+:: Usage: call :validate "xmlfile"
+:: Depends on: External program 'xml.exe' from  XMLstarlet http://xmlstar.sourceforge.net/
+  set xmlfile=%~1
+  set isxml=%outfile:~-3%
+  if not defined xmlfile if "%isxml%" == "xml" set xmlfile=%outfile%
+  if not defined xmlfile echo xml file parameter missing & goto :eof
+  if not exist "%xmlfile%" echo XML file not found & goto :eof
+  echo Info: Validating xml
+  call xml val -e -b "%xmlfile%"
+goto :eof
+
 :var
 :: Description: Set a variable within a taskgroup
 :: Usage: t=:var varname "varvalue"
@@ -1154,10 +1398,36 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:xquery
+:: Description: Provides interface to xquery by saxon9he.jar
+:: Usage: call :xquery scriptname ["infile"] ["outfile"] [allparam]
+:: Depends on: inccount, infile, outfile, funcend, fatal
+:: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: Required variables: java saxon9
+:: created: 2018-11-27
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  call :inccount
+  set scriptname=%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptname%.xml"
+  set allparam=%~4
+  set script=%projectpath%\scripts\%scriptname%
+  if not exist "%script%" call :fatal %0 "Missing xquery script!"
+  set param=%allparam:'="%
+  set curcommand="%java%" net.sf.saxon.Query -o:"%outfile%" -s:"%infile%" "%script%" %param%
+  if defined info2 echo %curcommand%
+  call %curcommand%
+  call :funcend %0
+goto :eof
+
 :xslt
 :: Description: Runs Java with saxon to process XSLT transformations.
 :: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
 :: Depends on: inccount, infile, outfile, fatal, funcend
+:: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: Required variables: java saxon9
   if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   call :inccount
