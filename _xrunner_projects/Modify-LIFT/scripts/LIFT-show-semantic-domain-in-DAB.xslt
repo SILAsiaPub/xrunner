@@ -14,7 +14,6 @@
       <xsl:strip-space elements="*"/>
       <xsl:include href="inc-copy-anything.xslt"/>
       <xsl:include href="project.xslt"/>
-      <xsl:include href="inc-file2uri.xslt"/>
       <!-- <xsl:param name="semantic" select="'on'"/> -->
       <!-- <xsl:param name="classification" select="'classification'"/> -->
       <!-- <xsl:param name="langorder" select="'id en'"/> -->

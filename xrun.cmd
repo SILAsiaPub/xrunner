@@ -298,7 +298,10 @@ goto :eof
 :: Description: returns the drive and path from a full drive:\path\filename
 :: Usage: call :drivepath C:\path\name.ext|path\name.ext
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined fatal goto :eof
   set utdp=%~dp1
+  set drive=%~d1
+  set drivelet=%drive:~0,1%
   set drivepath=%utdp:~0,-1%
   set utreturn=%drivepath%
   @if defined info4 echo %funcendtext% %0
@@ -370,6 +373,7 @@ goto :eof
 :outputfile
 :: Description: Copies last out file to new name. Used to make a static name other tasklists can use.
 :: Usage: :outputfile drive:\path\file.ext [start] [validate] 
+  if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set infile=%outfile%
   set outfile=%~1
@@ -498,6 +502,7 @@ goto :eof
 :: Description: Used to loop through a subset of files specified by the filespec from a single directory
 :: Usage: call :loopfiles file_specs sub_name [param[3-9]]
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
+  if defined fatal goto :eof
   set filespec=%~1
   set grouporfunc=%~2
   set par3=%~3
@@ -540,6 +545,7 @@ goto :eof
 :: Usage: call :loopstring action "string" ["comment"]
 :: Note: action may have multiple parts
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined fatal goto :eof
   rem echo on
   set string=%~1
   set grouporfunc=%~2
@@ -844,6 +850,7 @@ goto :eof
 :ifexist
 :: Description:
 :: Usage: call :ifexist testfile action 
+  if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" %~4 %~5 %~6
   set testfile=%~1
   set param2=%~2
@@ -851,8 +858,10 @@ goto :eof
   set param4=%~4
   set param5=%~5
   set param6=%~6
+  call :inccount
   if not defined testfile echoError:  missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
   if not defined param2 echo Error: missing action param2& echo %funcendtext% %0 error2 & goto :eof
+  for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
   for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
   if not exist "%testfile%" if defined info1 echo Info: testfile %~nx1 does not exist. No action %param2% taken
   if exist "%testfile%" if defined info1 echo %param2% %param3% %param4% %param5%
@@ -864,19 +873,22 @@ goto :eof
 :ifnotexist
 :: Description: If a file or folder do not exist, then performs an action.
 :: Usage: call :ifnotexist testfile action 
+  if defined fatal goto :eof
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   set testfile=%~1
-  set action=%~2
+  set param2=%~2
   set param3=%~3
   set param4=%~4
   set param5=%~5
   set param6=%~6
-  echo on
+  call :inccount
+  rem echo on
   if not defined testfile echo missing testfile parameter & echo %funcendtext% %0  & goto :eof
-  if not defined action echo missing action parameter & echo %funcendtext% %0  & goto :eof
-  set action=%action:'="%
-  if not exist "%testfile%" "%action%" %param3% %param4% %param5% %param6%
-  echo off
+  if not defined param2 echo missing action param2 parameter & echo %funcendtext% %0  & goto :eof
+  for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
+  set action=%param2:'="%
+  if not exist "%testfile%" %param2% %numbparam%
+  rem echo off
   set utreturn=%testfile%, %action%, %param3%, %param4%, %param5%, %param6%
   @if defined info4 echo %funcendtext% %0
  if defined masterdebug call :funcdebug %0 end
@@ -918,6 +930,13 @@ goto :eof
   @if defined info4 echo %funcstarttext% %0, %~1
   set name=%~n1
   set name
+  @if defined info4 echo %funcendtext% %0
+goto :eof
+
+:nameext
+  @if defined info4 echo %funcstarttext% %0, %~1
+  set nameext=%~nx1
+  set nameext
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
@@ -1098,10 +1117,19 @@ goto :eof
 
 :jade
 :: Description: Create xml from jade(now pug) file
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2"
+  call :inccount
   call:infile %~1
-  set outpath=%~2
-  call :checkdir "%outpath%"
-  call jade -o "%outpath%" "%infile%"
+  call :outfile "%~2" "%projectpath%\tmp\%name%.html"
+  call :nameext "%outfile%"
+  call :name "%infile%"
+  set outpatha=%~dp2
+  set outpath=%outpatha:~0,-1%
+  echo on
+  call jade -P -o "%outpath%" "%infile%"
+  echo off
+  ren "%outpath%\%name%.html" "%nameext%"
+  call :funcend %0
 goto :eof
 
 :rho
@@ -1122,8 +1150,8 @@ goto :eof
   set message2=%~3
   color 06 
   set pauseatend=on
-  echo Error: Task %count% %message%
-  if defined message2 echo Error: Task %count% %message2%
+  echo Fatal: Task %count% %message%
+  if defined message2 echo Fatal: Task %count% %message2%
   @if defined info4 echo %func% error 
   set utreturn=%message%
   set fatal=on
