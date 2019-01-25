@@ -24,6 +24,7 @@ level = 0
 dquote = chr(34)
 strUserProfile = objShell.ExpandEnvironmentStrings( "%userprofile%" )
 
+
 Function ReadIni( myFilePath, mySection, myKey )
     ' This function returns a value read from an INI file
     ' Arguments:
@@ -64,7 +65,7 @@ Function ReadIni( myFilePath, mySection, myKey )
                             ReadIni = Trim( Mid( strLine, intEqualPos + 1 ) )
                             ' In case the item exists but value is blank
                             If ReadIni = "" Then
-                                ReadIni = " "
+                                 ReadIni = " "
                             End If
                             ' Abort loop when item is found
                             Exit Do
@@ -210,9 +211,9 @@ Function SelectFolder( myStartFolder )
     ShowSelectedFolder.Value = SelectFolder
     projectTxt = SelectFolder & "\project.txt"
     If coFSO.FileExists(projectTxt) Then
-    projectInfo = SelectFolder & "\project-info.txt"
-    buttonShow(projectTxt)
-    Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
+      projectInfo = SelectFolder & "\project-info.txt"
+      buttonShow(projectTxt)
+      Document.getElementById("title").InnerText = ReadIni(projectTxt,"variables","title")
       call editArea1(projectTxt)
       call editArea2(projectInfo)
     End If
@@ -245,7 +246,7 @@ Function buttonShow(file)
         If len(ReadIni(file,group,"g")) > zero Then
           document.getElementById("grouplabel" & group).InnerText = ReadIni(file,group,"g")
         Else
-        document.getElementById("grouplabel" & group).InnerText = ReadIni(file,group,"label")
+          document.getElementById("grouplabel" & group).InnerText = ReadIni(file,group,"label")
         End If
     Else
         document.getElementById("grouplabel" & group).style.display = "none"
@@ -255,9 +256,9 @@ Function buttonShow(file)
       If len(ReadIni(file,group,"b")) > zero Then
           document.getElementById("button" & group).InnerText = ReadIni(file,group,"b")
       Else 
-    If len(ReadIni(file,group,"button")) > zero Then
-        document.getElementById("button" & group).InnerText = ReadIni(file,group,"button")
-    Else
+        If len(ReadIni(file,group,"button")) > zero Then
+            document.getElementById("button" & group).InnerText = ReadIni(file,group,"button")
+        Else
             document.getElementById("button" & group).InnerText = "Task group " & group
         End If
       End If  
@@ -328,7 +329,7 @@ End Sub
 
 Function OpenTab(tabid)
     Dim tab, x, Elem, Elemon, Elemtab , Elemtc, ifrm, tabname, tabactive
-    tab = Array("project","projectinfo","Xrunnerinfo","expert")
+    tab = Array("project","projectinfo","Xrunnerinfo", "Xrunfunc", "expert")
     tabactive = tabid & "tab"
     For x = 0 To Ubound(tab)
       tabname = tab(x) & "tab"
@@ -385,6 +386,7 @@ Sub toggleIni(ini,section,key)
   End If
 End Sub
 
+
 Sub  SetRadioFromIni(ini, section,key,idname,last)
   dim x, infolevel, radio
   infolevel = ReadIni(xrunini,section,key)
@@ -402,6 +404,8 @@ Sub  SetRadioFromIni(ini, section,key,idname,last)
     End If
   Next
 End Sub
+
+
 
 Sub  SetCboxByIdNumbSetFromIni(ini, section,key,idname,last)
   dim x
