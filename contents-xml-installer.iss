@@ -52,7 +52,7 @@ Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deletea
 
 [Icons]
 Name: "{group}\Xrunner"; Filename: "{app}\xrunner.hta"; IconFilename: "{app}\setup\{#icon}"
-Name: "{group}\Xrunner func documentation"; Filename: "{app}\docs\xrun-docs.md.html"; IconFilename: "{app}\setup\{#icon}"
+;Name: "{group}\Xrun func documentation"; Filename: "{app}\docs\xrun-docs.md.html"; IconFilename: "{app}\setup\{#icon}"
 Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}" 
 
  [Run]
