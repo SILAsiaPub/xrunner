@@ -11,8 +11,10 @@ xslt:
   if lines(a) == 0 then do fatal = "true"; say "Fatal: Missing XSLT file"; return; end
   if lines(b) == 0 then do fatal = "true"; say "Fatal: Missing input XML file"; return; end
   c = "-o:" || c
-  if info3 == "on" then say c
-  if info2 = "on" then say "java -jar" SAXON c b a d e f g h
+  call info 3 c
+  call info 2 "java -jar" SAXON c b a d e f g h
+  --if info3 == "on" then say c
+  --if info2 = "on" then say "java -jar" SAXON c b a d e f g h
   "java -jar" SAXON c b a d e f g h
   call funcend
 return
