@@ -1,7 +1,7 @@
 xslt:
   if fatal == "true" then return
   parse ARG a b c d e f g h
-  if info2 == "on" then say "call xslt" a b c d e f g h
+  call info 4 "call xslt" a b c d e f g h
   call inccount
   parse VAR a xname "." ext
   /* xname = reverse(substr(reverse(a),6)) */
