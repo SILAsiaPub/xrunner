@@ -3,7 +3,8 @@ xslt:
   parse ARG a b c d e f g h
   if info2 == "on" then say "call xslt" a b c d e f g h
   call inccount
-  xname = reverse(substr(reverse(a),6))
+  parse VAR a xname "." ext
+  /* xname = reverse(substr(reverse(a),6)) */
   a = scripts || "/" || a
   b = infile(b)
   c = outfile(c,group || "-" || count || "-" || xname || ".xml") 
