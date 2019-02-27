@@ -11,7 +11,7 @@ inisection:
 		otherwise			
 			out = lineout(arg(2),'/* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)' */')
 	end
-	if fb2 == 1 then say 'Getting key-values from' FILESPEC("n",arg(1)) 'for section:' arg(3)
+	call info 2 'Getting key-values from' FILESPEC("n",arg(1)) 'for section:' arg(3)
 	found = 0
 	say FILESPEC("n",arg(1)) 'has' lines(arg(1)) 'lines.' linein(arg(1),1) '-------------------'
 	do while lines(arg(1)) > 0 
@@ -41,3 +41,4 @@ inisection:
 	if pos('xslt',arg(2)) > 0 then out = out + lineout(arg(2),'</xsl:stylesheet>')
 	else out = out + lineout(arg(2),' ')
 return out
+

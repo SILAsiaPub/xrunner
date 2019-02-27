@@ -4,3 +4,4 @@ linecopy:
 		 lce = lce + lineout(arg(2),linein(arg(1)))
 	end
 return lce
+ 

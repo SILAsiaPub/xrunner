@@ -1,4 +1,5 @@
 nameext:
 	parse arg p
-	if fb5 == 1 then say p 'fb5'
+	call info 5 p 'i5'
 return FILESPEC("n",p)
+

@@ -15,3 +15,4 @@ writexslt:
 	end
 	rtv = lineout(arg(1) '<xsl:param name="'arg(2)'" select="'new'"/>')
 return new
+

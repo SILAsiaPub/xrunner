@@ -4,3 +4,4 @@ infile:
     then inf = outfile 
     else inf = in
 return inf
+
