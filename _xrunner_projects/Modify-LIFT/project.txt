@@ -2,7 +2,6 @@
 title=Modify LIFT file for DAB
 sourcelift=%projectpath%\source\lexicon.lift
 outputlift=%projectpath%\output\lexicon-mod.lift
-
 showsemanticentry=on
 showsemanticwordtab=on
 showsemanticnumbertab=off
@@ -10,7 +9,9 @@ showsemanticnumberentry=on
 classification=category
 beforesemnumb=no.
 semanticclassificationsystem=semantic-domain-ddp4
-
+test_list=a=aaa b=bbb c=ccc
+test_equals-list=a=b=c
+test_semicolon-list=a b c;d e f;g h i
 
 [a]
 button=Modify Lift so categories show in DAB.
