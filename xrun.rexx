@@ -4,6 +4,9 @@ parse arg projectfile groupin infolevel pauseatend
 /* send header to display */
 say center(' xrun.rexx ',80) 
 say center('' time("E") '',80,'=') 
+if infolevel == 6 then trace r
+slash = '/'
+if ADDRESS() == 'CMD' then slash = '\'
 
 
 /* test parameters */
@@ -13,21 +16,22 @@ if length(arg(2)) < 1 then groupin = 'a'
 /* say linein(projectfile) */
 
 /* run main program and setup tasks and xslt */
-call info 5 'i5 projectfile passed to script'
-projectfile = TRANSLATE(projectfile,'','"')
--- say "projectfile =" projectfile
+call info 5 'projectfile passed to script'
+projectfile = strip(TRANSLATE(projectfile,'','"'))
+call info 5 "projectfile =" projectfile
 projectpath = drivepath(projectfile)
--- say 'projectpath =' projectpath
+call info 5 'projectpath =' projectpath
 
 /* setup named system and temp file */
 ini = 'setup/xrun.ini'
 xsetup = 'xsetup'
 psetup = 'psetup'
 tasks = 'tasks.rexx'
-inixslt = projectpath'scripts/xrun.xslt'
-projectxslt = projectpath'scripts/project.xslt'
+inixslt = projectpath'scripts'slash'xrun.xslt'
+projectxslt = projectpath'scripts'slash'project.xslt'
 projectvar = 'variables'
-
+sq = "'"
+dq = '"'
 
 call info 2 'i2' arg(1) arg(2) arg(3) arg(4) arg(5)
 se1 = lineout(tasks,'',1)
@@ -38,11 +42,11 @@ se1 = se1 + inisection(projectfile,tasks,groupin,'rexxtasks')
 se1 = linecopy('func.rexx',tasks)
 se1 = se1 + inisection(ini,inixslt,'setup','writexslt')
 se1 = se1 + inisection(projectfile,projectxslt,'variables','writexslt')
-/* "rexx tasks.rexx" projectpath */
+rexx tasks.rexx projectpath
 say center('' time("E") '',80,'-') 
 if se1 == 0 
-	then say 'Completed successfully' TIME("R") 'seconds' 
-	else say 'Unsuccessful' se1 'errors' TIME("R") 'seconds' 
+	then say 'Completed successfully'
+	else say 'Unsuccessful' se1 'errors'
 exit se1
 
 badwrite:
@@ -61,8 +65,9 @@ drivepath:
 	parse arg p
 	p = TRANSLATE(p,'','"')
 	if address() == 'CMD'
-		then dp = filespec("drive",p) || filespec("path",p)
-		else dp = filespec("path",p)
+		then dp = filespec("D",p) || filespec("P",p)
+		else dp = filespec("P",p)
+		call info 4 'drivepath =' dp
 return dp
 
 ext:
@@ -91,42 +96,50 @@ return inf
 info:
   parse ARG level message
   if level <= infolevel then say " "
-  if level <= infolevel then say message
+  if level <= infolevel then say message 'i'level
 return
 
 inisection:
 /* Description: find the ini section then process is with line handler
 	Usage: inisection( sourceini, outfile, section, process)*/ 
+	parse ARG in,outf,section,dofunc 
+	out = 0
 	select
 		/* when arg(5) == 1 then out = lineout(arg(2),'/''* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)'*''/ ',arg(5))  */
-		when pos('xslt',arg(2)) > 0 then
+		when 'writexslt' == dofunc then
 			do
-				out = lineout(arg(2),'<?xml version="1.0"?>',1)
-				out = out + lineout(arg(2),'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">',2)
+				out = lineout(outf,'<!-- auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc '-->',1)
+				out = lineout(outf,'<?xml version="1.0"?>',1)
+				out = out + lineout(outf,'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">',2)
 			end
+		when pos('cmd',outf) > 0 then out = out + lineout(outf,'rem auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc )
 		otherwise			
-			out = lineout(arg(2),'/* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)' */')
+			out = lineout(outf,'/* auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc '*/')
 	end
-	call info 2 'Getting key-values from' FILESPEC("n",arg(1)) 'for section:' arg(3)
+	call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
 	found = 0
-	say FILESPEC("n",arg(1)) 'has' lines(arg(1)) 'lines.' linein(arg(1),1) '-------------------'
-	do while lines(arg(1)) > 0 
-		line = linein(arg(1))
+	if lines(in) == 1 
+		then say nameext(in) 'found! Getting section [' || section || '] -------------------'
+		else say 'XXX Did not detect file "' || in || '" lines returned' lines(in)
+	do while lines(in) > 0 
+		line = strip(linein(in))
 		/* say line */
 		select
-			when strip(line) == arg(3) then; do; found = 1; end
-			when strip(line) == '['arg(3)']' then; do; found = 1; end
+			when line == section then; do; found = 1; end
+			when line == '['section']' then; do; found = 1; end
 			when substr(line,1,1) == '[' then; do; found = 0; end
 			when pos('=',line) > 0 then; do	
 				if found == 1 then
 				 	do 
 				 		parse var line name '=' value
 						select
-							when arg(4) == 'rexxvar' then; do; out = out + rexxvar(arg(2),name,value); if out \== 0 then say arg(4) out name; end
-							when arg(4) == 'rexxvarwithvar' then; do; out = out + rexxvarwithvar(arg(2),name,value); if out \== 0 then say arg(4) out name; end
-							when arg(4) == 'rexxtasks' then; do; out = out + rexxtasks(arg(2),name,value); if out \== 0 then say arg(4) out name; end
-							when arg(4) == 'writexslt' then; do; out = out + writexslt(arg(2),name,value); if out \== 0 then say arg(4) out name; end
-							otherwise; do; say 'Unhandled: write to screen' arg(4) name value; end
+							when dofunc == 'rexxvar' then; do; out = out + rexxvar(outf,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'rexxvarwithvar' then; do; out = out + rexxvarwithvar(outf,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'rexxtasks' then; do; out = out + rexxtasks(outfile,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'writexslt' then; do; out = out + writexslt(outf,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'writecmdtasks' then; do; out = out + writecmdtasks(outf,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'writecmdvar' then; do; out = out + writecmdvar(outf,name,value); if out \== 0 then say dofunc out name; end
+							otherwise; do; say 'Unhandled: write to screen' dofunc name value; end
 						end				 	
 					end				
 				end
@@ -134,18 +147,36 @@ inisection:
 				nop
 		end
 	end
-	if pos('xslt',arg(2)) > 0 then out = out + lineout(arg(2),'</xsl:stylesheet>')
-	else out = out + lineout(arg(2),' ')
+	if 'writexslt' == dofunc then out = out + lineout(outf,'</xsl:stylesheet>')
+	else out = out + lineout(outf,' ')
 	if out \== 0 then say 'errors' out
+	call info 3 STREAM(in,"C",'close')
+	call info 3 STREAM(outf,"C",'close')
 return out
 
 linecopy:
+	parse ARG in,out
 	lce = 0	
-	do while lines(arg(1)) > 0
-		 lce = lce + lineout(arg(2),linein(arg(1)))
+	do while lines(in) > 0
+		 lce = lce + lineout(out,linein(in))
 	end
+	call info 3 stream(in,'C','close')
+	call info 3 stream(out,'C','close')
 return lce
  
+listseparator:
+  parse ARG list
+  sep = ''
+  select
+    when list == 'list' then sep = ' '
+    when list == 'semicolon-list' then sep = ';'
+    when list == 'equal-list' then sep = '='
+    when list == 'tilde-list' then sep = '~'
+    when list == 'underscore-list' then sep = '_'
+    otherwise nop
+  end
+return sep
+
 missingproject:
 	say 'A valid project file must be provided. It is a required parameter.'
 	say 'Usage: xrun C:\path\project.txt [group [infolevel [pauseatend]]]'
@@ -155,11 +186,13 @@ return
 name:
 	extname = reverse(FILESPEC('n',arg(1)))
 	parse var extname x '.' f
-return reverse(f)
+	rv = reverse(f)
+	call info 4 'name =' rv
+return rv
 
 nameext:
 	parse arg p
-	call info 5 p 'i5'
+	call info 5 p 
 return FILESPEC("n",p)
 
 outfile:
@@ -172,6 +205,8 @@ outfile:
       else nop
   
 return outfile
+
+/* placeholder */
 
 rexxtasks: 
 /* Description: converts xrun task to rexx structure 
@@ -186,15 +221,15 @@ rexxtasks:
 			do
 				do p = 1 to 6 by 1
 					if length(par.p) > 0 then pstr = pstr stringwithvar(par.p)
-					call info 5 'i5' pstr
+					call info 5 pstr
 				end
 				/* now write result to file */
 				rexxtreturn = lineout(arg(1),'call' func pstr )
-				call info 5 'i5' 'call' func  pstr									
+				call info 5 'call' func  pstr									
 			end
 		when name == 't' & first \== ':' then
 			do 
-			call info 5 'i5' name value
+			call info 5 name value
 			rexxtreturn = lineout(arg(1), '"'value'"')
 			end	
 		otherwise
@@ -205,13 +240,13 @@ return rexxtreturn
 rexxvar:
 	/* newvar = arg(2) '= "'arg(3)'"' */
 	newvar = arg(2) '=' stringwithvar(arg(3))
-	call info 2 'i2' newvar
+	call info 2 newvar
   	writereturn = lineout(arg(1), newvar)
 return writereturn
 
 rexxvarwithvar:
 	newvar2 = arg(2) '=' stringwithvar(arg(3))
-	call info 2 'i2'  newvar2
+	call info 2 newvar2
 	rexxvreturn = lineout(arg(1),newvar2)
 return rexxvreturn
 
@@ -229,15 +264,35 @@ stringwithvar:
 			otherwise new = new/* concat */char
 		end
 	end
-	call info 5 'i5' 'Out string:' new
+	call info 5 'Out string:' new
 return new
 
+writecmdtasks:
+	parse ARG outf name value
+	rtv = 0
+	select
+		when name == 't' then rtv = rtv + lineout(outf,'call' value)
+		otherwise nop
+	end
+return rtv
+writecmdvar:
+	parse ARG outf name value
+	rtv = 0
+	select
+		when name == '' then nop
+		otherwise rtv = rtv + lineout(outf,'set' name'='value)
+	end
+return rtv
 writexslt:
-	len = length(arg(3))
-	if lines(arg(1)) > 0 then del arg(1)
-	new = ""
+	parse ARG xout,n,v
+	parse VAR n ln '_' lt
+	dq = '"'
+	sq = "'"
+	len = length(v)
+	
+	rtv = 0
 	do j = 1 to len by 1
-		char = substr(arg(1),j,1)
+		char = substr(v,j,1)
 		select
 			when j == 1 & char == '%' then nop
 			when j == 1 & char \== '%' then new = "'"char
@@ -247,9 +302,19 @@ writexslt:
 			otherwise new = new/* concat */char
 		end
 	end
-	rtv = lineout(arg(1) '<xsl:param name="'arg(2)'" select="'new'"/>')
-return new
-
+	rtv = rtv + lineout(xout,'<xsl:param name='dq||n||dq ' select='dq||new||dq|| '/>')
+  if COUNTSTR('_',n) > 0
+    then 
+      select
+        when lt == 'file-list' then rtv = rtv + lineout(xout,'<xsl:variable name='dq||ln||dq 'select='dq 'f:file2lines('sq || n || sq')"/>')
+        when lt == 'equal-list' then rtv = rtv + lineout(xout,'<xsl:variable name='dq||ln||dq 'select='dq 'tokenize($'n ','sq || listseparator(lt) ||sq ')"/>')
+        otherwise 
+          do
+            rtv = rtv + lineout(xout,'<xsl:variable name='dq ||ln||dq 'select='dq 'tokenize($'n || ','sq || listseparator(lt) ||sq||')"/>')
+            if COUNTSTR('=',v) > 0 then rtv = rtv + lineout(xout,'<xsl:variable name='dq||ln || '-key'dq 'select='dq || 'tokenize($'n || ','sq || '=[^'listseparator(lt)']*['listseparator(lt)']?'sq ')"/>')
+          end
+      end
+return rtv
 xslt:
   if fatal == "true" then return
   parse ARG a b c d e f g h
