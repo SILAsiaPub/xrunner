@@ -12,6 +12,6 @@ stringwithvar:
 			otherwise new = new/* concat */char
 		end
 	end
-	call info 5 'i5' 'Out string:' new
+	call info 5 'Out string:' new
 return new
 

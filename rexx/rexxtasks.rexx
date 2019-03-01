@@ -11,15 +11,15 @@ rexxtasks:
 			do
 				do p = 1 to 6 by 1
 					if length(par.p) > 0 then pstr = pstr stringwithvar(par.p)
-					call info 5 'i5' pstr
+					call info 5 pstr
 				end
 				/* now write result to file */
 				rexxtreturn = lineout(arg(1),'call' func pstr )
-				call info 5 'i5' 'call' func  pstr									
+				call info 5 'call' func  pstr									
 			end
 		when name == 't' & first \== ':' then
 			do 
-			call info 5 'i5' name value
+			call info 5 name value
 			rexxtreturn = lineout(arg(1), '"'value'"')
 			end	
 		otherwise
