@@ -81,7 +81,7 @@ goto :eof
   call :infile "%~2" %0
   if defined missinginput  call :fatal %0 "infile not found!" & goto :eof
   set cctparam=-u -b -q -n
-  if defined append set cctparam=-u -b -q -n -a
+  if defined append set cctparam=-u -b -n -a
   if not exist "%ccw32%" call :fatal %0 "missing ccw32.exe file" & goto :eof
   set scriptout=%script:.cct,=_%
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
@@ -441,8 +441,8 @@ goto :eof
   if not defined param2 echo Error: missing action param2& echo %funcendtext% %0 error2 & goto :eof
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
   for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
-  if not exist "%testfile%" if defined info1 echo Info: testfile %~nx1 does not exist. No action %param2% taken
-  if exist "%testfile%" if defined info1 echo %param2% %param3% %param4% %param5%
+  if not exist "%testfile%" if defined info3 echo Info: testfile %~nx1 does not exist. No action %param2% taken
+  if exist "%testfile%" if defined info3 echo %param2% %param3% %param4% %param5%
   if exist "%testfile%" %param2% %param3% %param4% %param5% 
   set utreturn=%testfile%, %param2%, %param3%, %param4%, %param5%, %param6%
   @if defined info4 echo %funcendtext% %0
@@ -526,6 +526,19 @@ goto :eof
   set sectionskip=
   @if defined info4 echo %funcendtext% %0
 goto :eof  
+
+:rexxini
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  call :inccount
+  call :infile "%~1" %0
+  call :outfile "%~2" "%projectpath%\scripts\xrun.xslt"
+  call :nameext "%outfile%"
+  set section=%~3
+  set process=%~4
+  call rexx rexxini.rexx %infile% %outfile% %section% %process%
+  if %errorlevel% neq 0 echo Bad write to %nameext%.
+  @if defined info4 echo %funcendtext% %0
+goto :eof
 
 :iniline2var
 :: Description: Sets variables from one section
@@ -614,6 +627,36 @@ goto :eof
   echo off
   ren "%outpath%\%name%.html" "%nameext%"
   call :funcend %0
+goto :eof
+
+:javahometest
+set JAVA_HOME=%JAVA_HOME:"=%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+if not exist "%JAVA_EXE%" (
+  set javahome=ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 
+  call :javainpathtest
+  )
+goto :eof
+
+:javainpathtest
+set JAVA_EXE=java.exe
+%JAVA_EXE% -version >NUL 2>&1
+if "%ERRORLEVEL%" neq "0" (
+  set javapath=Error: No 'java' command could be found in your PATH.
+  set nojava=true
+  call :javanotfound 
+  )
+goto :eof
+
+:javanotfound
+echo.
+if defined javahome echo %javahome%
+if defined javapath echo %javapath%
+echo.
+echo Fatal: Is Java installed?
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
 goto :eof
 
 :last
@@ -710,6 +753,7 @@ goto :eof
   @if defined info4 echo {---- :main %~1
   set group=%~1
   call :setup
+  if defined fatal goto :eof
   if defined group set taskgroup=%group%
   set utreturn=-,%group%,
   if not defined unittest for %%g in (%taskgroup%) do call :taskgroup %tasgroupprefix%%%g
@@ -1044,9 +1088,13 @@ goto :eof
   call :detectdateformat
   rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
   rem set maxsubcount=%defaulttaskcount%
-  if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
+  rem if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
+  call :javahometest
+  if defined nojava set fatal=on & goto :eof
   if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
   call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt tools
+  rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
+  rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
   copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
   rem create ?.xrun with batch
   rem  echo on 
@@ -1055,6 +1103,10 @@ goto :eof
   rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
+  rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
+  rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
+  rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
+  rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
   rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
   rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
@@ -1072,6 +1124,33 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:unicodecount
+:: Description: Count unicode characters in file
+:: Usage: t=:unicodecount "infile" "outfile"
+:: Depends on: External program UnicodeCCount.exe from https://scripts.sil.org/cms/scripts/page.php?item_id=UnicodeCharacterCount&preview_mode=1
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  call :infile "%~1"
+  call :outfile "%~2" "%projectpath%\tmp\%group%-%count%-unicodecount.txt"
+  if not exist "%unicodecharcount%" call :fatal "Unicode Character count executable not found or not defined in xrun.ini"
+  call "%unicodecharcount%" -o "%outfile%" "%infile%"
+  call :funcend %0
+goto :eof
+
+:uniqcount
+:: Description: Create a sorted ist that is then reduced to a Uniq list
+:: Usage: t=:sortuniq infile outfile
+:: Depends on: External program C:\Windows\System32\sort.exe found in Windows
+:: Depends on: External program uniq.exe from http://gnuwin32.sourceforge.net/
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  call :infile "%~1"
+  call :outfile "%~2" "%projectpath%\tmp\%group%-%count%-sorted-list.txt"
+  set nocount=%~3
+  set countuniq=-c
+  if defined nocount set countuniq=
+  call C:\Windows\System32\sort.exe "%infile%" \O "%projectpath%\tmp\tmp1.txt"
+  call uniq %countuniq% "%projectpath%\tmp\tmp1.txt" "%outfile%"
+  call :funcend %0
+goto :eof
 
 :spawnbat
 :: Depreciated:
