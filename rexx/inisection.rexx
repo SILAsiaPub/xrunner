@@ -4,6 +4,7 @@ inisection:
 	parse ARG in,outf,section,dofunc 
 	out = 0
 	comment = 'Auto generated temporary file. Created from' FILESPEC("n",in) 'extracting section ['section'] by process' dofunc
+	call info 3 STREAM(outf,"C",'open')
 	select
 		/* when arg(5) == 1 then out = lineout(arg(2),'/''* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)'*''/ ',arg(5))  */
 		when 'writexslt' == dofunc then
@@ -17,13 +18,21 @@ inisection:
 		otherwise			
 			out = lineout(outf,'/*' comment '*/',1)
 	end
-	call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
+	-- call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
+	call info 3 STREAM(outf,"C",'close')
 	found = 0
 	if lines(in) == 1 
-		then say nameext(in) 'found! Getting section [' || section || '] -------------------'
+		then 
+			do 
+				call info 2 nameext(in) 'found! Getting section [' || section || '] processed by' dofunc 
+				loop 10
+					waisttime = COUNTSTR('o',in)
+				end
+			end
 		else say 'XXX Did not detect file "' || in || '" lines returned' lines(in)
 	do while lines(in) > 0 
 		line = strip(linein(in))
+		call info 3 STREAM(outf,"C",'open')
 		/* say line */
 		select
 			when line == section then; do; found = 1; end
@@ -35,11 +44,11 @@ inisection:
 				 		parse var line name '=' value
 						select
 							when dofunc == 'rexxvar' then; do; out = out + rexxvar(outf,name,value); if out \== 0 then say dofunc out name; end
-							when dofunc == 'rexxvarwithvar' then; do; out = out + rexxvarwithvar(outf,name,value); if out \== 0 then say dofunc out name; end
-							when dofunc == 'rexxtasks' then; do; out = out + rexxtasks(outfile,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'rexxtasks' then; do; out = out + rexxtasks(outf,name,value); if out \== 0 then say dofunc out name; end
 							when dofunc == 'writexslt' then; do; out = out + writexslt(outf,name,value); if out \== 0 then say dofunc out name; end
 							when dofunc == 'writecmdtasks' then; do; out = out + writecmdtasks(outf,name,value); if out \== 0 then say dofunc out name; end
 							when dofunc == 'writecmdvar' then; do; out = out + writecmdvar(outf,name,value); if out \== 0 then say dofunc out name; end
+							when dofunc == 'rexxvarwithvar' then; do; out = out + rexxvarwithvar(outf,name,value); if out \== 0 then say dofunc out name; end
 							otherwise; do; say 'Unhandled: write to screen' dofunc name value; end
 						end				 	
 					end				

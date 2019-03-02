@@ -292,7 +292,7 @@ Sub xrun(group)
     'If document.getElementById("unittest").checked  Then
     '   unittest = "unittest"
     'End If
-   call RunScript("xrun",projectTxt,group,level,pauseatend,"")
+   call RunScript("xrunrx",projectTxt,group,level,pauseatend,"")
 End Sub
 
 Sub copy()

@@ -15,7 +15,7 @@ if exist "%pathdown%\xrun.rexx" (
 call :appendfile ..\setup\setup.rexx "%pathdown%\xrun.rexx"
 echo off
 call :loopfiles *.rexx :appendfile "%pathdown%\xrun.rexx"
-
+call :loopfiles *.rexx :appendfile %pathdown%\func.rexx
 
 goto :eof
 

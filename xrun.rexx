@@ -75,7 +75,11 @@ ext:
 	parse var extname x '.' f
 return '.' || reverse(x)
  
-funcend:
+fatal:
+	parse ARG message
+	set fatal = 'true'
+	say message
+returnfuncend:
   parse ARG a b
   if lines(outfile) > 0
     then call info 2 "Output:" outfile
@@ -104,25 +108,36 @@ inisection:
 	Usage: inisection( sourceini, outfile, section, process)*/ 
 	parse ARG in,outf,section,dofunc 
 	out = 0
+	comment = 'Auto generated temporary file. Created from' FILESPEC("n",in) 'extracting section ['section'] by process' dofunc
+	call info 3 STREAM(outf,"C",'open')
 	select
 		/* when arg(5) == 1 then out = lineout(arg(2),'/''* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)'*''/ ',arg(5))  */
 		when 'writexslt' == dofunc then
 			do
-				out = lineout(outf,'<!-- auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc '-->',1)
-				out = lineout(outf,'<?xml version="1.0"?>',1)
-				out = out + lineout(outf,'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">',2)
+				out = lineout(outf,'<!--' comment '-->',1)
+				out = lineout(outf,'<?xml version="1.0"?>')
+				out = out + lineout(outf,'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">')
 			end
-		when pos('cmd',outf) > 0 then out = out + lineout(outf,'rem auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc )
+		when 'writecmdtasks' == dofunc then nop /* out = out + lineout(outf,'rem' comment ,1) */
+		when 'writecmdvar' == dofunc then  nop /* out = out + lineout(outf,'rem' comment ,1) */
 		otherwise			
-			out = lineout(outf,'/* auto generated temporary file from' FILESPEC("n",in) 'from section' section 'for process' dofunc '*/')
+			out = lineout(outf,'/*' comment '*/',1)
 	end
-	call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
+	-- call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
+	call info 3 STREAM(outf,"C",'close')
 	found = 0
 	if lines(in) == 1 
-		then say nameext(in) 'found! Getting section [' || section || '] -------------------'
+		then 
+			do 
+				call info 2 nameext(in) 'found! Getting section [' || section || '] processed by' dofunc 
+				loop 10
+					waisttime = COUNTSTR('o',in)
+				end
+			end
 		else say 'XXX Did not detect file "' || in || '" lines returned' lines(in)
 	do while lines(in) > 0 
 		line = strip(linein(in))
+		call info 3 STREAM(outf,"C",'open')
 		/* say line */
 		select
 			when line == section then; do; found = 1; end
@@ -200,10 +215,8 @@ outfile:
   if clo = passthrough 
     then outfile = def 
     else outfile = clo
-  if lines(outfile) > 0 then 
-      "mv" outfile outfile || ".prev"  
-      else nop
-  
+  if lines(outfile) > 0 
+  	then "mv" outfile outfile || ".prev"  
 return outfile
 
 /* placeholder */
@@ -275,21 +288,22 @@ writecmdtasks:
 		otherwise nop
 	end
 return rtv
+
 writecmdvar:
 	parse ARG outf name value
 	rtv = 0
 	select
-		when name == '' then nop
+		when length(name) == 0 then nop
 		otherwise rtv = rtv + lineout(outf,'set' name'='value)
 	end
 return rtv
+
 writexslt:
 	parse ARG xout,n,v
 	parse VAR n ln '_' lt
 	dq = '"'
 	sq = "'"
-	len = length(v)
-	
+	len = length(v)	
 	rtv = 0
 	do j = 1 to len by 1
 		char = substr(v,j,1)
@@ -315,24 +329,32 @@ writexslt:
           end
       end
 return rtv
+
 xslt:
-  if fatal == "true" then return
-  parse ARG a b c d e f g h
-  call info 4 "call xslt" a b c d e f g h
-  call inccount
-  parse VAR a xname "." ext
-  /* xname = reverse(substr(reverse(a),6)) */
-  a = scripts || "/" || a
-  b = infile(b)
-  c = outfile(c,group || "-" || count || "-" || xname || ".xml") 
-  if lines(a) == 0 then do fatal = "true"; say "Fatal: Missing XSLT file"; return; end
-  if lines(b) == 0 then do fatal = "true"; say "Fatal: Missing input XML file"; return; end
-  c = "-o:" || c
-  call info 3 c
-  call info 2 "java -jar" SAXON c b a d e f g h
-  --if info3 == "on" then say c
-  --if info2 = "on" then say "java -jar" SAXON c b a d e f g h
-  "java -jar" SAXON c b a d e f g h
-  call funcend
+    if fatal \== "true" 
+      then 
+        do
+          parse ARG a b c d e f g h
+          call info 4 "call xslt" a b c d e f g h
+          call inccount
+          parse VAR a xname "." ext
+          /* xname = reverse(substr(reverse(a),6)) */
+          a = scripts || "/" || a
+          b = infile(b)
+          c = outfile(c,group || "-" || count || "-" || xname || ".xml") 
+          if lines(a) == 0 then call fatal "Fatal: Missing XSLT file"
+          if lines(b) == 0 then call fatal "Fatal: Missing input XML file"
+          if fatal \== 'true' 
+            then 
+              do
+                c = "-o:" || c
+                call info 4 c
+                call info 2 "java -jar" SAXON c b a d e f g h
+                --if info3 == "on" then say c
+                --if info2 = "on" then say "java -jar" SAXON c b a d e f g h
+                "java -jar" SAXON c b a d e f g h
+                call funcend 'xslt'
+              end
+        end
 return
 
