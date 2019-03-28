@@ -74,6 +74,7 @@ Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "nonunique_list"; Strin
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "unittestlabel_list"; String: "ut utt"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "tasklabel_list"; String: "t"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "batchsection_list"; String: "variables var project proj"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "xsltsection_list"; String: "variables xvar"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "includesection_list"; String: "include inc"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "guisection_list"; String: "gui"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "reservedsection_list"; String: "variables var project proj include inc gui"; Flags: createkeyifdoesntexist
