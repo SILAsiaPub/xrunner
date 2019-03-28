@@ -671,12 +671,12 @@ goto :eof
 
 :loopfiles
 :: Description: Used to loop through a subset of files specified by the filespec from a single directory
-:: Usage: call :loopfiles file_specs sub_name [param[3-9]]
+:: Usage: call :loopfiles sub_name file_specs [param[3-9]]
 :: Depends on: appendnumbparam, last, taskgroup. Can also use any other function.
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
   if defined fatal goto :eof
-  set filespec=%~1
-  set grouporfunc=%~2
+  set grouporfunc=%~1
+  set filespec=%~2
   set par3=%~3
   set par4=%~4
   set par5=%~5
@@ -714,14 +714,14 @@ goto :eof
 
 :loopstring
 :: Description: Loops through a list supplied in a space separated string.
-:: Usage: call :loopstring action "string" ["comment"]
+:: Usage: call :loopstring grouporfunc "string" [param[3-9]]
 :: Depends on: appendnumbparam, last, taskgroup. Can also use any other function.
 :: Note: action may have multiple parts
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
   if defined fatal goto :eof
   rem echo on
-  set string=%~1
-  set grouporfunc=%~2
+  set grouporfunc=%~1
+  set string=%~2
   set par3=%~3
   set par4=%~4
   set par5=%~5
@@ -1147,7 +1147,7 @@ goto :eof
   set nocount=%~3
   set countuniq=-c
   if defined nocount set countuniq=
-  call C:\Windows\System32\sort.exe "%infile%" \O "%projectpath%\tmp\tmp1.txt"
+  call C:\Windows\System32\sort.exe "%infile%" /O "%projectpath%\tmp\tmp1.txt"
   call uniq %countuniq% "%projectpath%\tmp\tmp1.txt" "%outfile%"
   call :funcend %0
 goto :eof
