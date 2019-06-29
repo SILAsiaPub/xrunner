@@ -1,0 +1,23 @@
+Transformation Information.
+
+This transformation takes a set of USX files exported from Paratext and creates 
+a figures list for inclusion in a spreadsheet.
+
+To Use:
+
+1. Ensure that Java is installed on your computer and is in your path. A standard 
+   installation does this for you.
+2. Export USX files from Paratext.
+3. Start Xrunner from the Start Menu, Publishing, Xrunner
+4. Click the Edit project.txt button.
+   a. Edit the project.txt file and change USX path to where your USX files are 
+   located.
+   b. Change the divider character to | if you don't want a tab!
+   c. Save and close the project.txt file.
+5. Click the Make table button.
+   If the black command window appears and dissappears that is good everything 
+   should have worked.
+   If the black command window stays showing then there was a problem. Errors 
+   occured.
+6. The created outfile will be opened in Notepad. You can copy and paste into your spread sheet.
+

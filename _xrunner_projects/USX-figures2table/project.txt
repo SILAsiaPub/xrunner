@@ -1,0 +1,9 @@
+[variables]
+title=Produce a list of figures from a set of USX files
+usxpath=D:\usx-collection\agp
+outputtable=%projectpath%\output\fig-table.tsv
+
+[a]
+button=Make table
+t=:xslt USX-fig-table.xslt "blank.xml"
+t=:outputfile "%outputtable%" start
