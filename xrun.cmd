@@ -35,9 +35,13 @@ goto :eof
 :: Description: Appends one file to the end of another file.
 :: Usage: call : appendfile filetoadd filetoappendto
   if defined fatal goto :eof
+  rem echo on
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
-  type "%~1" >> "%~2"
+  if not exist "%~2" copy nul "%~2"
+  if not exist "%~1" echo Warning: File to append does not exist. File: %~1  & pause & @if defined info4 echo %funcendtext% %0 & goto :eof
+  if exist "%~1" type "%~1" >> "%~2"
   set utreturn=%~1, %~2
+  rem echo off
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
@@ -87,6 +91,37 @@ goto :eof
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
   if defined fatal goto :eof
   set curcommand="%ccw32%" %cctparam% -t "%script%" -o "%outfile%" "%infile%"
+  @if defined info2 echo. & echo %curcommand%
+  set basepath=%cd%
+  cd /D "%scripts%"
+  call %curcommand%
+  cd /D "%basepath%"
+  set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
+  call :funcend %0
+goto :eof
+
+:ccta
+:: Description: Privides interface to CCW32.
+:: Usage: call :cct script.cct ["infile.txt" ["outfile.txt"]]
+:: Depends on: inccount, infile, outfile, funcend
+:: External program: ccw32.exe https://software.sil.org/cc/
+:: Required variable: ccw32
+  if defined fatal goto :eof
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  call :inccount %count%
+  set script=%~1
+  set append=%~4
+  if not defined script call :fatal %0 "CCT script not supplied!" & goto :eof
+  if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!  %scripts%\%script%" & goto :eof
+  call :infile "%~2" %0
+  if defined missinginput  call :fatal %0 "infile not found!" & goto :eof
+  set cctparam=-u -b -q -n
+  if defined append set cctparam=-u -b -n -a
+  if not exist "%ccw32%" call :fatal %0 "missing ccw32.exe file" & goto :eof
+  set scriptout=%script:.cct,=_%
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
+  if defined fatal goto :eof
+  set curcommand="%ccw32%" -a %cctparam% -t "%script%" -o "%outfile%" "%infile%"
   @if defined info2 echo. & echo %curcommand%
   set basepath=%cd%
   cd /D "%scripts%"
@@ -345,16 +380,18 @@ set nameext=%~nx1
 FOR /F "usebackq tokens=1-2" %%A IN (`%encodingchecker% --mime-encoding "%infile%"`) DO set fencoding=%%B
 if defined validateagainst (
     if "%fencoding%" == "%validateagainst%"  (
-        echo Encoding is: %fencoding% for file %nameext%.
+        echo %green% Encoding is: %fencoding% for file %nameext%. %reset%
       ) else if "%fencoding%" == "us-ascii" (
-        echo Encoding is: %fencoding% not %validateagainst% but is usable.
+        echo %magentabg% Encoding is: %fencoding% not %validateagainst% but is usable. %reset%
       ) else (
-        echo File %nameext% encoding is invalid! 
-        echo Encoding is: %fencoding%  But it was expected to be: %validateagainst%.
+        echo %redbg% File %nameext% encoding is %fencoding%! %reset% 
+        echo %redbg% Encoding is: %fencoding%  But it was expected to be: %validateagainst%. %reset%
         set errorsuspendprocessing=on
+        pause
       )
 ) else  (              
-    echo Encoding is: %fencoding% for file %nameext%.
+    echo Encoding is: %magentabg% %fencoding% %reset% for file %nameext%.
+    pause
 ) 
   set utreturn=%testfile%, %validateagainst%, %fencoding%, %nameext%
   @if defined info4 echo %funcendtext% %0
@@ -366,11 +403,11 @@ goto :eof
   set func=%~1
   set message=%~2
   set message2=%~3
-  color 06 
+  rem color 06 
   set pauseatend=on
-  echo Fatal: Task %count% %message%
-  if defined message2 echo Fatal: Task %count% %message2%
-  @if defined info4 echo %func% error 
+  @if defined info2 echo %fatal% In %func% %group%%reset% 
+  echo %fatal% Task %count% %message% %reset%
+  if defined message2 echo %fatal% Task %count% %message2%%reset%
   set utreturn=%message%
   set fatal=on
 goto :eof
@@ -388,9 +425,9 @@ goto :eof
 :: Usage: call :funcend %0
   set funcname=%~1
   @if defined info2 if exist "%outfile%" echo.
-  @if defined info1 if exist "%outfile%" echo Output: %outfile%
+  @if defined info1 if exist "%outfile%" echo %green%Output: %outfile% %reset%
   @if defined info1 if exist "%outfile%" set utret3=Output: %outfile%
-  @if defined outfile if not exist "%outfile%" color 06 & Echo Output file not created!
+  @if defined outfile if not exist "%outfile%" Echo %redbg%Task failed: Output file not created! %reset%
   @if defined outfile if not exist "%outfile%" set utret4=color 06
   @if defined outfile if exist "%outfile%" set utret4=
   @if defined info4 echo %funcendtext% %funcname%
@@ -485,9 +522,9 @@ goto :eof
 :exit-prompt
 :: Description: runs an exe file that brings up a prompt
 exit-cmd.exe
-if exist "%tmp%\yes" (set ans=exit) else (set ans=echo.)
+if exist "%tmp%\yes" (set ans=exit & del /q /f "%tmp%\yes") else (set ans=echo.)
 %ans%
-if exist "%tmp%\yes" del /q /f %tmp%\yes >nul 2>&1
+
 goto :eof
 
 :inccount
@@ -682,6 +719,7 @@ goto :eof
 :: Usage: call :loopfiles sub_name file_specs [param[3-9]]
 :: Depends on: appendnumbparam, last, taskgroup. Can also use any other function.
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
+  @if defined loopfilesecho echo on
   if defined fatal goto :eof
   set grouporfunc=%~1
   set filespec=%~2
@@ -694,24 +732,70 @@ goto :eof
   set par9=%~9
   set numbparam=
   set appendparam=
-  if not defined grouporfunc echo Error: Missing func parameter[2]
+  if not defined grouporfunc echo %error% Missing func parameter[2]%reset%
   if not defined grouporfunc if defined info4 echo %funcendtext% %0 
   if not defined grouporfunc goto :eof
-  if not defined filespec echo Error: Missing filespec parameter[1]
+  if not defined filespec echo %error% Missing filespec parameter[1]%reset%
   if not defined filespec if defined info4 echo %funcendtext% %0 
   if not defined filespec goto :eof
-  if not exist "%filespec%" echo Error: Missing source files
+  if not exist "%filespec%" echo %error% Missing source files %reset%
   if not exist "%filespec%" if defined info4 echo %funcendtext% %0 
   if not exist "%filespec%" goto :eof
+  @if defined loopfilesecho echo off
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
   for /L %%v in (3,1,9) Do call :last par %%v
-  if defined info3 set numbparam
+  @if defined loopfilesecho echo on
+  if defined info3 if defined numbparam set numbparam
   if defined info4 if defined comment echo %last%
   if not defined unittest (
     if "%grouporfunc:~0,1%" == ":" (
         FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call %grouporfunc% "%%s" %numbparam%
       ) else (
         FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
+  )  
+    )  
+  )  
+  set utreturn= %filespec%, %sub%, %numbparam%, %last%
+  if defined unittest FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO call :unittestaccumulate "%%s" %sub% %numbparam%
+  @if defined info4 echo %funcendtext% %0
+  @if defined loopfilesecho echo off
+goto :eof
+
+:looplist
+:: Description: Used to loop through list supplied in a file
+:: Usage: call :loopfiles sub_name list-file_specs [param[3-9]]
+:: Depends on: appendnumbparam, last, taskgroup. Can also use any other function.
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3" "%~4" "%~5" "%~6" "%~7" "%~8" "%~9"
+  if defined fatal goto :eof
+  set grouporfunc=%~1
+  set listfile=%~2
+  set par3=%~3
+  set par4=%~4
+  set par5=%~5
+  set par6=%~6
+  set par7=%~7
+  set par8=%~8
+  set par9=%~9
+  set numbparam=
+  set appendparam=
+  if not defined grouporfunc echo %error% Missing func parameter[2]%reset%
+  if not defined grouporfunc if defined info4 echo %funcendtext% %0 
+  if not defined grouporfunc goto :eof
+  if not defined listfile echo %error% Missing list-file parameter[1]%reset%
+  if not defined listfile if defined info4 echo %funcendtext% %0 
+  if not defined listfile goto :eof
+  if not exist "%listfile%" echo %error% Missing source files %reset%
+  if not exist "%listfile%" if defined info4 echo %funcendtext% %0 
+  if not exist "%listfile%" goto :eof
+  for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
+  for /L %%v in (3,1,9) Do call :last par %%v
+  if defined info3 set numbparam
+  if defined info4 if defined comment echo %last%
+  if not defined unittest (
+    if "%grouporfunc:~0,1%" == ":" (
+        FOR /F " delims=" %%s IN (%listfile%) DO  call %grouporfunc% "%%s" %numbparam%
+      ) else (
+        FOR /F " delims=" %%s IN (%listfile%) DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
   )  
     )  
   )  
@@ -799,8 +883,8 @@ goto :eof
   if defined espeak if defined info2 call "%espeak%" "x run finished"
   if defined unittest for %%g in (%taskgroup%) do call :unittestaccumulate t%%g
   @if defined info4 echo %funcendtext% :main
-  if defined pauseatend pause
   if defined pauseatend call :exit-prompt
+  if defined pauseatend pause
 goto :eof
 
 :mergevar
@@ -836,7 +920,7 @@ goto :eof
 :: Description: Returns a variable nameext containg just the name and extension from the path.
   @if defined info4 echo %funcstarttext% %0, %~1
   set nameext=%~nx1
-  set nameext
+  @if defined info3 set nameext
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
@@ -879,7 +963,7 @@ goto :eof
   set outfile=%~1
   set var2=%~2
   set var3=%~3
-  set %var2%=%~1
+  if defined var2 set %var2%=%~1
   if defined fatal goto :eof
   call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
@@ -1116,6 +1200,10 @@ goto :eof
       chcp 65001
       )
   @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  set redbg=[101m
+  set magentabg=[105m
+  set green=[32m
+  set reset=[0m
   rem the following line cleans up from previous runs.
   if not defined unittest if exist scripts\*.xrun del scripts\*.xrun
   set scripts=%projectpath%\scripts
@@ -1142,6 +1230,8 @@ goto :eof
   rem  echo off 
   rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
+  if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
+  echo start Java parse project.txt
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
   rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
   rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
@@ -1229,7 +1319,7 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
-:start2
+:starturl
 :: Description: Start a program but don't wait for it.
   @if defined info4 echo %funcstarttext% %0 %~1 %~2 %~3 %~4 %~5
   set p1=%~1
@@ -1242,7 +1332,7 @@ goto :eof
   set p8=%~8
   echo.
   rem check availability
-  set curcommand=%p1% %p2% %p3%s %p4% %p5% %p6% %p7% %p8%
+  set curcommand=%p1% %p2% %p3% %p4% %p5% %p6% %p7% %p8%
   rem run the command
   echo start /b %curcommand%
   start /b %curcommand%
@@ -1563,7 +1653,7 @@ goto :eof
   if defined fatal goto :eof
   @if defined info2 echo.
   @if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
-  %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
+  %java% -Xmx1024m -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
   set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   call :funcend %0
 goto :eof
