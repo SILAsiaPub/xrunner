@@ -1,9 +1,27 @@
 /* auto generated tasks.rexx */
-projectpath = arg(1)
+say ''
+say center('  Loading tasks variables  ',80,'-') 
 scripts = projectpath'/scripts'
 infile = ''
 outfile = ''
-tcount = 0
+taskerr = 0
+taskskip = 0
+count = 0
 fatal = 0
 skiptasks = 0
 nameext = 'name'
+if ADDRESS() == 'CMD' 
+	then 
+	Do 
+		slash = '\'
+		delete = 'del'
+		move = 'move'
+		makedir = 'md'
+	end
+	else
+	Do
+		slash = '/'
+		delete = 'rm'
+		move = 'mv'
+		makedir = 'mkdir -p'
+	end

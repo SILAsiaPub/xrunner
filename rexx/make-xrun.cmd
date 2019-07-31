@@ -2,20 +2,34 @@
 setlocal enabledelayedexpansion
 set thispath=%CD%
 set pathdown=%thispath:\rexx\rexx=\rexx%
+
 call :detectdateformat
 call :date
 call :time
-  echo on
-if exist "%pathdown%\xrun.rexx" (
-  echo file exists
-  move /y "%pathdown%\xrun.rexx" "%cd%\old\%curyyyymmdd%-%curhhmmss%xrun.rexx"
-  rem del "%pathdown%\xrun.rexx"
+
+echo ------------------- build func.rexx from individual funcs ------------------
+if exist "%pathdown%\func.rexx" (
+  echo file func.rexx exists moving to folder old
+  move /y "%pathdown%\func.rexx" "%cd%\old\%curyyyymmdd%-%curhhmmss%func.rexx"
   )
-  echo off
-call :appendfile ..\setup\setup.rexx "%pathdown%\xrun.rexx"
-echo off
-call :loopfiles *.rexx :appendfile "%pathdown%\xrun.rexx"
 call :loopfiles *.rexx :appendfile %pathdown%\func.rexx
+if exist "%pathdown%\func.rexx" echo Created: func.rexx
+
+echo ------------------- build xrun.rexx from individual funcs ------------------
+if exist "%pathdown%\xrun.rexx" (
+  echo file xrun.rexx exists moving to folder old
+  move /y "%pathdown%\xrun.rexx" "%cd%\old\%curyyyymmdd%-%curhhmmss%xrun.rexx"
+  )
+copy /Y "xrun-header\xrun.rexx"+"%pathdown%\func.rexx" "%pathdown%\xrun.rexx"
+
+
+echo ---------------- make cmd plugins and put where needed ---------------------
+echo on
+set dependency=+"writecmdtasks.rexx"+"writecmdvar.rexx"+"inisection.rexx"+"nameext.rexx"+"rexxvar.rexx"+"rexxvarwithvar.rexx"+"rexxtasks.rexx"+"writexslt.rexx"+"stringwithvar.rexx"
+copy /y "xrun-header\rexxini.rexx"%dependency% "C:\programs\xrunner\rexxini.rexx"
+copy /y "xrun-header\rexxini.rexx"%dependency% "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk\rexxini.rexx"
+echo off
+pause
 
 goto :eof
 

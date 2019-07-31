@@ -19,3 +19,4 @@ t=:inputfile "%sourcelift%"
 t=:xslt LIFT-show-semantic-domain-in-DAB.xslt
 t=:outputfile "%outputlift%"
 t=:start "%outputlift%"
+

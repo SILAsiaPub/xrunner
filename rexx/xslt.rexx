@@ -1,28 +1,52 @@
 xslt:
-    if fatal \== "true" 
-      then 
-        do
-          parse ARG a b c d e f g h
-          call info 4 "call xslt" a b c d e f g h
-          call inccount
-          parse VAR a xname "." ext
-          /* xname = reverse(substr(reverse(a),6)) */
-          a = scripts || "/" || a
-          b = infile(b)
-          c = outfile(c,group || "-" || count || "-" || xname || ".xml") 
-          if lines(a) == 0 then call fatal "Fatal: Missing XSLT file"
-          if lines(b) == 0 then call fatal "Fatal: Missing input XML file"
-          if fatal \== 'true' 
-            then 
-              do
-                c = "-o:" || c
-                call info 4 c
-                call info 2 "java -jar" SAXON c b a d e f g h
-                --if info3 == "on" then say c
-                --if info2 = "on" then say "java -jar" SAXON c b a d e f g h
-                "java -jar" SAXON c b a d e f g h
-                call funcend 'xslt'
-              end
-        end
+  parse ARG a b c d e f g h  
+  -- say  a '|' b '|' c '|' d '|' e '|' f '|' g '|' h   
+  if fatal \== "true" 
+    then 
+      do
+        call info 4 "call xslt" a '|' b '|' c '|' d '|' e '|' f '|' g '|' h   
+        call inccount
+        parse VAR a xname "." ext
+        /* xname = reverse(substr(reverse(a),6)) */
+        script = scripts || slash || a
+        altout = projectpath||slash'tmp'slash||group"-"count"-"xname".xml"
+        infile = infile(b,outfile)
+        outfile = strip(outfile(3,arg(),c,altout,nocheck))
+        /* Select
+          when arg() == 1
+          then
+          do
+            
+            outfile = altout
+          end
+          when arg() == 2
+          then
+          do
+            
+            outfile = altout
+          end
+          otherwise
+          do
+           
+            outfile = c
+          end
+        end  
+        say arg() */
+        if lines(script) == 0 then call fatal "Missing XSLT file" script
+        say 'infile' infile
+        
+        say 'outfile' outfile
+        if fatal == 'true' 
+          then taskskip = taskskip + 1
+          else
+          do
+            c = "-o:" || c
+            call info 4 c
+            commandline = "java -jar" saxon "-o:"outfile infile script d e f g h
+            call info 2 commandline
+            commandline
+            call funcend 'xslt'
+          end
+      end
 return
 

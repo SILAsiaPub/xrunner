@@ -3,28 +3,29 @@ inisection:
 	Usage: inisection( sourceini, outfile, section, process)*/ 
 	parse ARG in,outf,section,dofunc 
 	out = 0
-	comment = 'Auto generated temporary file. Created from' FILESPEC("n",in) 'extracting section ['section'] by process' dofunc
+	comment = 'Auto generated file. Do not edit! Source:' FILESPEC("n",in) ', Section: ['section'] by process' dofunc
+
 	call info 3 STREAM(outf,"C",'open')
 	select
 		/* when arg(5) == 1 then out = lineout(arg(2),'/''* auto generated temporary file from' FILESPEC("n",arg(1)) 'from section' arg(3)'*''/ ',arg(5))  */
 		when 'writexslt' == dofunc then
 			do
-				out = lineout(outf,'<!--' comment '-->',1)
-				out = lineout(outf,'<?xml version="1.0"?>')
+				out = lineout(outf,'<?xml version="1.0" encoding="utf-8"?>',1)
+				out = lineout(outf,'<!--' comment '-->')
 				out = out + lineout(outf,'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">')
 			end
-		when 'writecmdtasks' == dofunc then nop /* out = out + lineout(outf,'rem' comment ,1) */
-		when 'writecmdvar' == dofunc then  nop /* out = out + lineout(outf,'rem' comment ,1) */
+		when 'writecmdtasks' == dofunc then  out = out + lineout(outf,'rem' comment ) 
+		when 'writecmdvar' == dofunc then   out = out + lineout(outf,'rem' comment ) 
 		otherwise			
-			out = lineout(outf,'/*' comment '*/',1)
+			out = lineout(outf,'/*' comment '*/')
 	end
-	-- call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section
+	/* call info 2 'Getting key-values from' FILESPEC("n",in) 'for section:' section */
 	call info 3 STREAM(outf,"C",'close')
 	found = 0
 	if lines(in) == 1 
 		then 
 			do 
-				call info 2 nameext(in) 'found! Getting section [' || section || '] processed by' dofunc 
+				call info 2 '== Source:' FILESPEC("n",in) 'Sect: ['section'] Format:' dofunc 'Output:' FILESPEC("n",outf)
 				loop 10
 					waisttime = COUNTSTR('o',in)
 				end

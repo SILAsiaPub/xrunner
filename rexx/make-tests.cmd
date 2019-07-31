@@ -1,4 +1,5 @@
 @echo off
+Echo Creating testing files for functions
 set thispath=%CD%
 set pathdown=%thispath:\rexx\rexx=\rexx%
 call :detectdateformat
@@ -8,8 +9,8 @@ rem if exist "%pathdown%\func.rexx" move /y "%pathdown%\func.rexx" "%cd%\old\%cu
 setlocal enabledelayedexpansion
 call :loopfiles *.rexx :maketest test-header testing
 @echo off
-copy /y "testing\rexxini.rexx" "C:\programs\xrunner"
-copy /y "testing\rexxini.rexx" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk"
+rem copy /y "testing\rexxini.rexx" "C:\programs\xrunner"
+rem copy /y "testing\rexxini.rexx" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk"
 
 pause
 goto :eof
@@ -20,7 +21,7 @@ goto :eof
   set headerpath=%~2
   set outpath=%~3
   if exist "%headerpath%\%file%" (
-    copy /y "%headerpath%\%file%"+%file%%dependency% "%outpath%\%file%"
+    copy /y %headerpath%\%file%+%file%%dependency% "%outpath%\t-%file%"
   )
 goto :eof
 
@@ -29,7 +30,12 @@ goto :eof
   set dependency=
   if '%dp%' == 'writexslt.rexx' set dependency=+listseparator.rexx
   if '%dp%' == 'inisection.rexx' set dependency=+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
-  if '%dp%' == 'rexxini.rexx' set dependency=+writecmdtasks.rexx+writecmdvar.rexx+inisection.rexx+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
+  if '%dp%' == 'outputfile.rexx' set dependency=+linecopy.rexx
+  if '%dp%' == 'outfile.rexx' set dependency=+checkdir.rexx
+  if '%dp%' == 'infile.rexx' set dependency=+fatal.rexx
+  if '%dp%' == 'checkdir.rexx' set dependency=+drivepath.rexx
+  if '%dp%' == 'xslt.rexx' set dependency=+infile.rexx+outfile.rexx+fatal.rexx+inccount.rexx+funcend.rexx+checkdir.rexx
+  rem if '%dp%' == 'rexxini.rexx' set dependency=+writecmdtasks.rexx+writecmdvar.rexx+inisection.rexx+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
   set dependency=%dependency%+info.rexx
 goto :eof
 
