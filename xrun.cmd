@@ -482,6 +482,14 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:exit-prompt
+:: Description: runs an exe file that brings up a prompt
+exit-cmd.exe
+if exist "%tmp%\yes" (set ans=exit) else (set ans=echo.)
+%ans%
+if exist "%tmp%\yes" del /q /f %tmp%\yes >nul 2>&1
+goto :eof
+
 :inccount
 :: Description: Increments the count variable
 :: Usage: call :inccount
@@ -712,6 +720,36 @@ goto :eof
   @if defined info4 echo %funcendtext% %0
 goto :eof
 
+:loopnumber
+:: Description: Loops through a set of numbers.
+:: Usage: call :loopnumber grouporfunc start stop
+:: Depends on: taskgroup. Can also use any other function.
+:: Note: action may have multiple parts
+  @if defined info4 echo %funcstarttext% %0 "%~1" "%~2" "%~3"
+  if defined fatal goto :eof
+  rem echo on
+  set grouporfunc=%~1
+  set start=%~2
+  set end=%~3
+  set step=%~4
+  if not defined start set start=1
+  if not defined end set end=12
+  if not defined step set step=1
+  if not defined grouporfunc echo Missing action parameter
+  if not defined grouporfunc echo %funcendtext% %0 
+  if not defined grouporfunc goto :eof
+  if not defined start echo Missing start parameter
+  if not defined start echo %funcendtext% %0 
+  if not defined start goto :eof
+  if not defined end echo Missing end parameter
+  if not defined end echo %funcendtext% %0 
+  if not defined end goto :eof
+  if "%grouporfunc:~0,1%" == ":" FOR /L %%s IN (%start%,%step%,%end%) DO call %grouporfunc% "%%s"
+  if "%grouporfunc:~0,1%" neq ":" FOR /L %%s IN (%start%,%step%,%end%) DO call :taskgroup %grouporfunc% "%%s"
+  @if defined info4 echo %funcendtext% %0
+  rem @echo off
+goto :eof
+
 :loopstring
 :: Description: Loops through a list supplied in a space separated string.
 :: Usage: call :loopstring grouporfunc "string" [param[3-9]]
@@ -762,6 +800,7 @@ goto :eof
   if defined unittest for %%g in (%taskgroup%) do call :unittestaccumulate t%%g
   @if defined info4 echo %funcendtext% :main
   if defined pauseatend pause
+  if defined pauseatend call :exit-prompt
 goto :eof
 
 :mergevar
@@ -840,6 +879,7 @@ goto :eof
   set outfile=%~1
   set var2=%~2
   set var3=%~3
+  set %var2%=%~1
   if defined fatal goto :eof
   call :checkdir "%outfile%"
   move /Y "%infile%" "%outfile%" >> log.txt
