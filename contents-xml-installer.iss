@@ -47,8 +47,9 @@ Source: "_Xrunner_Projects\Hymn_Menu\scripts\*.*"; DestDir: "{app}\_Xrunner_Proj
 ;Source: "..\..\..\installer-tools\jre-8u141-windows-x64.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: IsWin64 AND InstallJava(); Flags: deleteafterinstall
 ;Source: "..\..\..\installer-tools\jre-8u66-windows-i586.exe"; DestDir: "{tmp}"; DestName: "JREInstall.exe"; Check: (NOT IsWin64) AND InstallJava(); Flags: deleteafterinstall
 Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
-Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('C:\programs\saxon\saxon9he.jar');
+Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\saxon\saxon9he.jar');
 Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\ccw32.exe');
+;Source: "..\..\..\installer-tools\amazon-corretto-8.222.10.3-windows-x64-jre.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\java\java.exe');
 
 [Icons]
 Name: "{group}\Xrunner"; Filename: "{app}\xrunner.hta"; IconFilename: "{app}\setup\{#icon}"
@@ -56,8 +57,9 @@ Name: "{group}\Xrunner"; Filename: "{app}\xrunner.hta"; IconFilename: "{app}\set
 Name: "{group}\Uninstallers\Xrunner Uninstall"; Filename: "{uninstallexe}" 
 
  [Run]
-Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\xrunner\saxon\saxon9he.jar');
+Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\SaxonHE9-8-0-3J.zip -d {app}\saxon";  Check: FileDoesNotExist('C:\programs\xrunner\tools\saxon\saxon9he.jar');
 Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\cc8_1_6.zip -d '{app}\tools'";  Check: FileDoesNotExist('{app}\tools');
+;Filename: "{tmp}\UNZIP.EXE"; Parameters: "{tmp}\amazon-corretto-8.222.10.3-windows-x64-jre.zip -d '{app}\tools\java'";  Check: FileDoesNotExist('{app}\tools\java\java.exe');
 ;Filename: "{tmp}\JREInstall.exe"; Parameters: "/s"; Flags: nowait postinstall runhidden runascurrentuser; Check: InstallJava() ;
 
 [Dirs]
@@ -84,7 +86,7 @@ Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "commentlabel"; String:
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "needsaxon"; String: "true"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "java"; String: "java"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "ccw32"; String: "C:\programs\xrunner\tools\Ccw32.exe"; Flags: createkeyifdoesntexist
-Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\xrunner\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\xrunner\tools\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "zip"; String: "C:\Program Files\7-Zip\7z.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "editor"; String: "notepad"; Flags: createkeyifdoesntexist
 ;Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "foxe"; String: "C:\Program Files (x86)\firstobject\foxe.exe"; Flags: createkeyifdoesntexist
