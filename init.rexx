@@ -10,6 +10,7 @@ count = 0
 fatal = 0
 skiptasks = 0
 nameext = 'name'
+sect.1 = ''
 if ADDRESS() == 'CMD' 
 	then 
 	Do 

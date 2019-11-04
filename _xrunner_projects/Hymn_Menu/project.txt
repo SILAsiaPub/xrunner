@@ -3,10 +3,11 @@ title=build contents menu
 app-name=test 2
 
 
-sourcetextfile=%projectpath%\source\SongBookUSFM.txt
+source_file-list=%projectpath%\source\SongBookUSFM.txt
 zipfile=%projectpath%\output-zip\menu-items.zip
 outputdir=%projectpath%\output
-home-menu_semicolon-list=Home;Number;Song Title;Song first line;Tune name;Contributed by;Song writer;Permission;Copyright
+home-menu-title_semicolon-list=Home;Number;Song Title;Song first line;Tune name;Contributed by;Song writer;Permission;Copyright
+home-menu-subtitle_semicolon-list=
 menu_semicolon-list=Home;Number;Song Name;Song first line;Tune name;Contributors;Song writer;Permission;Copyright
 field_list=c s q s2 s1 s3 s5 s4
 field-subtitle_list=s c s s s s s s
