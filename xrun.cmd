@@ -247,7 +247,7 @@ goto :eof
 :: Depends on: :infile, :outfile, :inccount :funcend
 :: Uddated: 2018-11-03
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-  call :infile "%~1"
+  call :infile "%~1" %0
   call :outfile "%~2" "%~dpn1-copy%~x1"
   set fn1=%~nx1
   set fn2=%~nx2
@@ -333,7 +333,7 @@ goto :eof
 :detectdateformat
 :: Description: Get the date format from the Registery: 0=US 1=AU 2=iso
 :: Usage: call :detectdateformat
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0
   set KEY_DATE="HKCU\Control Panel\International"
   rem get dateformat number
   FOR /F "usebackq skip=2 tokens=3" %%A IN (`REG QUERY %KEY_DATE% /v iDate`) DO set dateformat=%%A
@@ -423,7 +423,7 @@ goto :eof
 :funcendtest
 :: Description: Used with func that out put files. Like XSLT, cct, command2file
 :: Usage: call :funcend %0
-  set funcname=%~1
+  set functest=%~1
   @if defined info2 if exist "%outfile%" echo.
   @if defined info1 if exist "%outfile%" echo %green%Output: %outfile% %reset%
   @if defined info1 if exist "%outfile%" set utret3=Output: %outfile%
@@ -431,22 +431,21 @@ goto :eof
   @if defined outfile if not exist "%outfile%" set utret4=color 06
   @if defined outfile if exist "%outfile%" set utret4=
   @if not defined info4 set utret5=
-  @if defined info4 set utret5=%funcendtext% %funcname%
+  @if defined info4 set utret5=%funcendtext% %functest%
   @if defined outfile if not exist "%outfile%" set skiptasks=on  & if not defined unittest pause
-  set utreturn= %funcname%, %info1%, %info4%, %utret3%, %utret4%, %utret5%
-  @if defined info4 echo %funcendtext% %funcname%
-  rem the following form of %funcname:~1% removes the colon from the begining of the func.
-  @if defined %funcname:~1%echo echo off
-goto :eof
+  set utreturn= %functest%, %info1%, %info4%, %utret3%, %utret4%, %utret5%
+  @call :funcend %functest%
+@goto :eof
 
 :funcend
 :: Description: Used for non ouput file func
 :: Usage: call :funcend %0
-  set func=%~1
+  @set func=%~1
   @if defined info4 echo %funcendtext% %func%
-  rem the following form of %func:~1% removes the colon from the begining of the func.
+  @if defined %func:~1%pause pause
+  @rem the following form of %func:~1% removes the colon from the begining of the func.
   @if defined %func:~1%echo echo off
-goto :eof
+@goto :eof
 
 :iconv
 :: Description: Converts files from CP1252 to UTF-8
@@ -542,7 +541,7 @@ goto :eof
 :inccount
 :: Description: Increments the count variable
 :: Usage: call :inccount
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0
   set /A count=%count%+1
   set writecount=%count%
   if %count% lss 10 set writecount=%space%%count%
@@ -554,7 +553,7 @@ goto :eof
 :: Description: If infile is specifically set then uses that else uses previous outfile.
 :: Usage: call :infile "%file%" calling-func
 :: Depends on: fatal
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0 "'%~1' '%~2'"
   set infile=%~1
   set callingfunc=%~2
   @if not defined infile set infile=%outfile%
@@ -572,14 +571,13 @@ goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :inccount
   call :infile "%~1" %0
-  call :outfile "%~2" "%projectpath%\scripts\xrun.xslt"
+  call :outfile "%~2" "%cd%\setup\xrun.xslt" 
   set subfunc=%~3
-  set sectionexit=%~4
-  rem pause
+  set section=%~4
+  if defined info2 echo Setup: Make xrun.xslt from: %~nx1
   echo ^<xsl:stylesheet xmlns:f="myfunctions" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0" exclude-result-prefixes="f"^> > "%outfile%"
-  FOR /F "eol=] tokens=1,2 delims==" %%u IN (%infile%) DO call :%subfunc% "%outfile%" "%sectionexit%" xsl:variable name %%u select "%%v" 
+  FOR /F "eol=] tokens=1,2 delims==" %%u IN (%infile%) DO call :%subfunc% "%outfile%" "%section%" xsl:variable name %%u select "%%v" 
   echo ^</xsl:stylesheet^> >> "%outfile%"
-  if defined info2 echo Setup: xrun.xslt from: %~nx1
   @set sectionexit=
   @call :funcend %0
 goto :eof  
@@ -616,28 +614,32 @@ goto :eof
 
 :iniparse4xslt
 :: Description: Parse the = delimited data and write to xslt . Skips sections and can exit when
-:: Usage: call :iniparse4xslt outfile sectionexit element att1name att1val att2name att2val
+:: Usage: call :iniparse4xslt outfile section element att1name att1val att2name att2val
 :: Depends on: inccount
-  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6' '%~7'"
   if defined sectionskip @call :funcend %0
   if defined sectionskip goto :eof
-  call :inccount
   set outfile=%~1
-  set sectionexit=%~2
+  set section=%~2
   set element=%~3
   set att1name=%~4
   set att1val=%~5
   set att2name=%~6
   set att2val=%~7
-  if "[%sectionexit%]" == "%att1val%" set sectionskip=on
-  if "%att1val:~0,1%" == "[" @call :funcend %0
-  if "%att1val:~0,1%" == "[" goto :eof
+  if "%att1val:~0,1%" == "[" if exist insection.txt del insection.txt
+  if "[%section%]" == "%att1val%" call :inccount  &  echo %att1val% > insection.txt
+  if "%att1val:~0,1%" == "["  @call :funcend %0 & goto :eof
+  if "%att1val:~0,1%" == "#" @call :funcend %0
+  if "%att1val:~0,1%" == "#" goto :eof
   if defined att1name set attrib1=%att1name%="%att1val%"
   if defined att1name set attriblist1=%att1name%="%att1val:_list=%"
   if defined att2name set attrib2=%att2name%="'%att2val%'"
   if defined att2name set attriblist2=%att2name%="tokenize($%att1val%,' ')"
+  if exist insection.txt (
+    if defined info3 echo     variable written
   echo   ^<%element% %attrib1% %attrib2%/^> >> "%outfile%"
   if %att1val% neq %att1val:_list=% echo   ^<%element% %attriblist1% %attriblist2%/^> >> "%outfile%"
+  )
   @call :funcend %0
 goto :eof
 
@@ -967,12 +969,12 @@ goto :eof
 :outfile
 :: Description: If out file is specifically set then uses that else uses supplied name.
 :: Usage: call :outfile "C:\path\file.ext" "%cd%\tmp\%script%.xml" nocheck
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0 "'%~1' '%~2' %~3"
   set toutfile=%~1
   set outpath=%~dp1
   rem the folloing is to preserve wildcards in the outfile. Since *.* when using %~nx1 becomes . not *.*
   set outnx=!toutfile:%outpath%=!
-  echo %outnx%
+  @if defined info4 echo %outnx%
   set defaultoutfile=%~2
   set defaultoutdp=%~dp2
   set defaultoutnx=%~nx2
@@ -1074,7 +1076,7 @@ goto :eof
 :: External program: prince.exe  https://www.princexml.com/
 :: External program: prince
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-  call :infile %~1
+  call :infile "%~1" %0
   call :outfile "%~2" "%projectpath%\output\output.pdf" 
   set css=%~3
   if defined css set css=-s "%css%"
@@ -1216,7 +1218,7 @@ goto :eof
   if defined missinginput color 06& echo %funcendtext% %0  & goto :eof
   set find="%~1"
   set replace="%~2"
-  call :infile "%~3"
+  call :infile "%~3" %0
   call :outfile "%~4" "%projectpath%\tmp\%group%-%count%-regex.txt"
   set options=%~5
   set curcommand=rxrepl.exe %options% --search %find% --replace %replace% -f "%infile%" -o "%outfile%"
@@ -1231,7 +1233,7 @@ goto :eof
 :: Depends on: infile, outfile, funcend NodeJS NPM program Rho
 :: External program: NodeJS npm program Rho
   @call :funcbegin %0 "'%~1' '%~2'"
-  call :infile "%~1"
+  call :infile "%~1" %0
   call :outfile "%~2" "%proectpath%\output\rho-out.html"
   call rho -i "%infile%" -o "%outfile%"
   @call :funcendtest %0
@@ -1242,7 +1244,7 @@ goto :eof
 :: Description: Used for initial setup and after xrun.ini and project.txt
 :: Usage: call :setinfolevel numb-level
 :: Note: numb-level range 0-5
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0 "%~1"
   rem reset info vars
   for /L %%v in (1,1,5) Do set info%%v=
   rem set info levels from input
@@ -1290,11 +1292,10 @@ goto :eof
   call :javahometest
   if defined nojava set fatal=on & goto :eof
   if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
-  call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt tools
-  pause
+  call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt setup
   rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
   rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
-  @copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
+  copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
   rem create ?.xrun with batch
   rem  echo on 
   rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
@@ -1302,7 +1303,7 @@ goto :eof
   rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
-  echo start Java parse project.txt
+  rem if defined info2 echo Info: Java:saxon parse project.txt
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
   rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
   rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
@@ -1330,7 +1331,7 @@ goto :eof
 :: Usage: t=:unicodecount "infile" "outfile"
 :: Depends on: External program UnicodeCCount.exe from https://scripts.sil.org/cms/scripts/page.php?item_id=UnicodeCharacterCount&preview_mode=1
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-  call :infile "%~1"
+  call :infile "%~1" %0
   call :outfile "%~2" "%projectpath%\tmp\%group%-%count%-unicodecount.txt"
   if not exist "%unicodecharcount%" call :fatal "Unicode Character count executable not found or not defined in xrun.ini"
   call "%unicodecharcount%" -o "%outfile%" "%infile%"
@@ -1343,7 +1344,7 @@ goto :eof
 :: Depends on: External program C:\Windows\System32\sort.exe found in Windows
 :: Depends on: External program uniq.exe from http://unixutils.sourceforge.net/
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-  call :infile "%~1"
+  call :infile "%~1" %0
   call :outfile "%~2" "%projectpath%\tmp\%group%-%count%-sorted-list.txt"
   set nocount=%~3
   set countuniq=-c
@@ -1646,7 +1647,7 @@ goto :eof
 :: Usage: Call :validaterng "rngschema" "xmlfile"
 :: Depends on: External Program jing.jar from https://relaxng.org/jclark/jing.html downloaded from: https://jar-download.com/download-handling.php
   set schema=%~1
-  call :infile %~2
+  call :infile %~2 %0
   set checkspath=%projectpath%\checks
   if not exist "%schema%" call :fatal %0 "Missing rng schema file to validate against!"
   if not exist "%infile%" call :fatal %0 "Missing xml file to validate!"
@@ -1675,15 +1676,12 @@ goto :eof
 :variableset
 :: Description: Sets variables sent from variableslist.
 :: Usage: call :variableset line sectiontoexit
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-  if defined sectionexit @call :funcend %0 
-  if defined sectionexit goto :eof
+  @call :funcbegin %0 "'%~1'"
+  if defined sectionexit @call :funcend %0  & goto :eof
   set line=%~1
   if "%line%" == "[%~2]" set sectionexit=on
-  if "%line:~0,1%" == "[" @call :funcend %0 
-  if "%line:~0,1%" == "[" goto :eof
+  if "%line:~0,1%" == "[" @call :funcend %0 & goto :eof
   if "%line:~0,1%" neq "#" set %line%
-  if defined info3 for /F "delims==" %%a in ("%line%") do set %%a
   set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
@@ -1695,7 +1693,7 @@ goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set list=%~1
   set sectiontoexit=%~2
-  @if defined info2 echo Setup: variables from: %~nx1 
+  @if defined info2 echo Setup: Include cmd variables from: %~nx1 
   set utreturn=%list%
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :variableset "%%q" %sectiontoexit%
   set sectionexit=
@@ -1755,11 +1753,12 @@ goto :eof
 
 :funcbegin
 :: Descriptions: takes initialization out of funcs
-  set func=%~1
-  rem the following line removes the func colon at the begining. Not removing it causes a crash.
-  set func=%func:~1%
-  set params=%~2
-  @if defined info4 %funcstarttext% %func% "%params:'="%"
-  @if defined %func%echo echo on
-goto :eof
+  @set func=%~1
+  @rem the following line removes the func colon at the begining. Not removing it causes a crash.
+  @set funcname=%func:~1%
+  @set params=%~2
+  @if defined info3 echo %func% %params%
+  @if defined info4 echo %funcstarttext% %func% %params%
+  @if defined %funcname%echo echo on
+@goto :eof
 
