@@ -49,6 +49,8 @@ Source: "_Xrunner_Projects\Hymn_Menu\scripts\*.*"; DestDir: "{app}\_Xrunner_Proj
 Source: "..\..\..\installer-tools\UNZIP.EXE"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{tmp}\UNZIP.EXE');
 Source: "..\..\..\installer-tools\SaxonHE9-8-0-3J.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\saxon\saxon9he.jar');
 Source: "..\..\..\installer-tools\cc8_1_6.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\ccw32.exe');
+Source: "tools\bin\*"; DestDir: "{app}\tools\bin"; 
+
 ;Source: "..\..\..\installer-tools\amazon-corretto-8.222.10.3-windows-x64-jre.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ;  Check: FileDoesNotExist('{app}\tools\java\java.exe');
 
 [Icons]
@@ -85,6 +87,10 @@ Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "true_list"; String: "t
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "commentlabel"; String: "com"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "needsaxon"; String: "true"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "java"; String: "java"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "iconv"; String: "tools\bin\iconv.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "uniq"; String: "tools\bin\uniq.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "UnicodeCCount"; String: "tools\bin\UnicodeCCount.exe"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "file"; String: "tools\bin\file.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "ccw32"; String: "C:\programs\xrunner\tools\Ccw32.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "saxon"; String: "C:\programs\xrunner\tools\saxon\saxon9he.jar"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "zip"; String: "C:\Program Files\7-Zip\7z.exe"; Flags: createkeyifdoesntexist
