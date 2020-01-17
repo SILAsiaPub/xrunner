@@ -5,18 +5,20 @@ say SUBWORD("file.ext",1,1)
 file = 'C:\WINDOWS\UTIL\file.ext'
 parse var file f '.' x
 say f x
-say word(changestr('.',FILESPEC("n",file),' '),1)
+say word(changestr('.',FILESPEC("N",file),' '),1)
+say filespec("N",file)
 thisfile = "C:\WINDOWS\UTIL\SYSTEM.INI"
-ext = FILESPEC('e',thisfile)
+ext = FILESPEC('N',thisfile)
 say changestr(ext,FILESPEC("name",thisfile),'')
-say filespec("P",file)
 say address()
 say drivepath(file)
 say drive(file)
+call test
 exit
 
 test:
-say arg() arg(1)
+parse source os st script
+say os st script
 return 0
 
 drivepath:

@@ -1,6 +1,7 @@
 /* rexx implementation of xrun 
    parse the arguments and the system */
 parse arg projectfile groupin infolevel pauseatend
+parse source os . rscript
 /* send header to display */
 say center(' xrun.rexx ',80) 
 say center('' time("E") '',80,'=') 
@@ -43,7 +44,7 @@ sq = "'"
 dq = '"'
 
 call info 2 projectfile groupin infolevel pauseatend
-if address() == 'CMD' then del tasks else rm tasks
+if os == 'WIN64' then del tasks else rm tasks
 se1 = lineout(tasks,'',1)
 se1 = se1 + lineout(tasks,'projectpath =' sq||strip(projectpath,'t',slash)||sq)
 se1 = se1 + lineout(tasks,'infolevel =' infolevel)
@@ -154,6 +155,7 @@ inisection:
 			do 
 				call info 2 '== Source:' FILESPEC("n",in) 'Sect: ['section'] Format:' dofunc 'Output:' FILESPEC("n",outf)
 				loop 10
+				do
 					waisttime = COUNTSTR('o',in)
 				end
 			end
