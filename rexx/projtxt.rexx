@@ -4,6 +4,12 @@ projtxt:
 	parse arg sourceini,projxslt,rexxtasks
 	xout = lineout(arg(2),'<?xml version="1.0"?>',1)
 	xout = xout + lineout(arg(2),'<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions" exclude-result-prefixes="f">',2)
+	xout = xout + lineout(arg(2),'<xsl:include href="inc-file2uri.xslt"/>')
+	xout = xout + lineout(arg(2),'<xsl:include href="inc-lookup.xslt"/>')
+	xout = xout + lineout(arg(2),'<xsl:include href="xrun.xslt"/>')
+	xout = xout + lineout(arg(2),'<xsl:variable name="projectpath" select="'sq||projectpath||sq'"/>')
+	xout = xout + lineout(arg(2),'<xsl:variable name="sq"><xsl:text>'sq'</xsl:text></xsl:variable>')
+	xout = xout + lineout(arg(2),'<xsl:variable name="dq"><xsl:text>'dq'</xsl:text></xsl:variable>')
 	call info 2 'Getting key-values from xrun.ini' 
 	found = ''
 	say 'project.txt has' lines(arg(1)) 'lines.' '-------------------'

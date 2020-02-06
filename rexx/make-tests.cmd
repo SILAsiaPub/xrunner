@@ -12,22 +12,23 @@ call :loopfiles *.rexx :maketest test-header testing
 rem copy /y "testing\rexxini.rexx" "C:\programs\xrunner"
 rem copy /y "testing\rexxini.rexx" "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\trunk"
 
-pause
 goto :eof
 
 :maketest
   set file=%~1
+  set name=%~n1
   call :dependson "%file%"
   set headerpath=%~2
   set outpath=%~3
-  if exist "%headerpath%\%file%" (
-    copy /y %headerpath%\%file%+%file%%dependency% "%outpath%\ut-%file%"
+  if exist "%headerpath%\%name%.ut" (
+    copy /y %headerpath%\%name%.ut+%file%%dependency% "%outpath%\ut-%file%"
   )
 goto :eof
 
 :dependson
   set dp=%~1
   set dependency=
+  if '%dp%' == 'checkdir.rexx' set dependency=+teststring.rexx
   if '%dp%' == 'writexslt.rexx' set dependency=+listseparator.rexx+rxstringwithvar.rexx
   if '%dp%' == 'inisection.rexx' set dependency=+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
   if '%dp%' == 'outputfile.rexx' set dependency=+linecopy.rexx
@@ -37,7 +38,7 @@ goto :eof
   if '%dp%' == 'xslt.rexx' set dependency=+infile.rexx+outfile.rexx+fatal.rexx+inccount.rexx+funcend.rexx+checkdir.rexx
   if '%dp%' == 'xsltstringwithvar.rexx' set dependency=+teststring.rexx
   if '%dp%' == 'rxstringwithvar.rexx' set dependency=+teststring.rexx
-  if '%dp%' == 'xrunini.rexx' set dependency=+xsltstringwithvar.rexx
+  if '%dp%' == 'xrunini.rexx' set dependency=+xsltstringwithvar.rexx+checkdir.rexx
   if '%dp%' == 'projtxt.rexx' set dependency=+rexxvar.rexx+rxstringwithvar.rexx
   rem if '%dp%' == 'rexxini.rexx' set dependency=+writecmdtasks.rexx+writecmdvar.rexx+inisection.rexx+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
   set dependency=%dependency%+info.rexx
