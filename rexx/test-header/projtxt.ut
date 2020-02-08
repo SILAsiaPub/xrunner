@@ -1,0 +1,16 @@
+
+trace e
+dq = '"'
+sq = "'"
+groupin = 'a'
+parse source os . .
+if os == "WIN64" then slash = '\' else slash = '/'
+if os == "WIN64" then makedir = 'md' else slash = 'mkdir'
+projectpath = "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\_xrunner_projects"
+numb = projtxt("D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\_xrunner_projects\Modify-LIFT\project.txt",'output/project.xslt','output/tasks-txt.rexx')
+call checkdir 'output'
+call start  'output/project.xslt'
+call start  'output/tasks-txt.rexx'
+
+exit
+

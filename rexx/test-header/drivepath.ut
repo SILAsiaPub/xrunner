@@ -1,0 +1,19 @@
+parse source os . .
+infolevel = 0
+tf = 0
+i1 = 'D:\path\file.txt'
+e1 = 'D:\path'
+t1 = drivepath(i1)
+
+i2 = '/users/mcqi/path/file.txt'
+e2 = '/users/mcqi/path'
+t2 = drivepath(i2)
+
+call teststring i1 t1 e1 'Windows path'
+call teststring i2 t2 e2 '*nix path'
+
+if tf > 0
+  then say center('  There were 'tf' errors  ',80,'=')
+  else say center('  All tests pass  ',80,'^')
+exit
+

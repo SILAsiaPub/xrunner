@@ -1,0 +1,27 @@
+trace n
+infolevel = 0
+outfile = 'C:\WINDOWS\UTIL\oldout.ext'
+
+tf = 0
+i1 = 'C:\WINDOWS\UTIL\file.ext'
+i2 = 'D:\WINDOWS\UTIL\file.bak.txt'
+i3 = 
+e1 = 'C:\WINDOWS\UTIL\file.ext'
+e2 = 'D:\WINDOWS\UTIL\file.bak.txt'
+e3 = 'C:\WINDOWS\UTIL\oldout.ext'
+t1 = infile(i1)
+t2 = infile(i2)
+t3 = infile(i3)
+
+call teststring i1 t1 e1
+call teststring i2 t2 e2
+call testemptystring t3 e3 i3
+
+if tf > 0
+  then say center('  There were 'tf' errors  ',80,'=')
+  else say center('  All tests pass  ',80,'^')
+exit
+
+
+exit
+

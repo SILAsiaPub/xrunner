@@ -1,0 +1,21 @@
+trace n
+infolevel = 2
+
+tf = 0
+i1 = 'C:\WINDOWS\UTIL\file.ext'
+i2 = 'C:\WINDOWS\UTIL\file.bak.txt'
+e1 = '.ext'
+e2 = '.txt'
+t1 = ext(i1)
+t2 = ext(i2)
+
+call teststring i1 t1 e1
+call teststring i2 t2 e2  'contains two periods'
+
+if tf > 0
+  then say center('  There were 'tf' errors  ',80,'=')
+  else say center('  All tests pass  ',80,'^')
+exit
+
+exit
+

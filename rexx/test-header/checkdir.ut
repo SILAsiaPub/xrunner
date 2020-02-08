@@ -1,0 +1,37 @@
+trace n
+infolevel = 0
+/* pre-req variables for all rexx */
+parse source os . .
+
+-- drive = filespec("D",t1)
+tf = 0
+t1 = 'C:\programs\xrunner\rexxini.rexx'
+t2 = 'D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\rexx\testing\xxx\rexxini.rexx'
+
+p1 = 'C:\programs\xrunner'
+p2 = 'D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\rexx\testing\xxx'
+
+rmdir p2
+pre1 = stream(p1,'c','query size')
+pre2 = stream(p2,'c','query size')
+
+r1 = checkdir(t1)
+r2 = checkdir(t2)
+
+post1 = stream(p1,'c','query size')
+post2 = stream(p2,'c','query size')
+
+call teststring p1 pre1 '0' 'Dir already exists at start of test'
+call teststring t1 r1 p1
+call teststring p1 post1 '0'
+
+call teststring p2 pre2 '' 
+call teststring t2 r2 p2 'When dir did not exist'
+call teststring p2 post2 '0' 'dir now exists'
+
+if tf > 0
+  then say center('  There were 'tf' errors  ',80,'=')
+  else say center('  All tests pass  ',80,'^')
+
+exit
+

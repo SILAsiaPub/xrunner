@@ -1,0 +1,14 @@
+trace a
+dq = '"'
+sq = "'"
+parse source os . .
+if os == "WIN64" then slash = '\' else slash = '/'
+if os == "WIN64" then makedir = 'md' else slash = 'mkdir'
+projectpath = "D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\_xrunner_projects"
+numb = xrunini('D:\All-SIL-Publishing\github-SILAsiaPub\xrunner\branches\rexx\rexx\testing\files\xrun.ini','output/xrun.xslt','output/tasks-ini.rexx')
+
+call start  'output/xrun.xslt'
+call start  'output/tasks-ini.rexx'
+
+exit
+
