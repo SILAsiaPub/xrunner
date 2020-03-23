@@ -10,7 +10,7 @@ xslt:
         /* xname = reverse(substr(reverse(a),6)) */
         script = scripts || slash || a
         altout = projectpath||slash'tmp'slash||group"-"count"-"xname".xml"
-        infile = infile(b,outfile)
+        infile = infile(b)
         outfile = strip(outfile(3,arg(),c,altout,nocheck))
         /* Select
           when arg() == 1

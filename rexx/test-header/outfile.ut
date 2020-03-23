@@ -1,10 +1,44 @@
-t1 = 'D:\xrunner\branches\rexx\rexx\testing.txt'
-t2 = 'D:\xrunner\branches\rexx\rexx\subdir\xrun.cmd'
-t3 = ''
-infolevel = 4
-trace r
-say 't1 valid' outfile(t1,t2) 
-say 't3 empty' outfile(t3,t2,'nocheck')
+parse source os . .
+trace a
+infolevel = 0
+slash = '\'
+tf = 0
+i1 = 'D:\path\file.txt'
+e1 = 'D:\path\file.txt'
+outfile = 'D:\path\file-other-stuff.txt'
+t1 = outfile(i1,outfile,'check')
 
+i2 = '/users/mcqi/path/file2.txt'
+e2 = '/users/mcqi/path/file2.txt'
+outfile = 'D:\path\file-other-stuff2.txt'
+t2 = outfile(i2,outfile,'check')
+
+i3 = 'D:\path\file.txt'
+e3 = 'D:\path\file.txt'
+outfile = 'D:\path\file-other-stuff.txt'
+t3 = outfile(i3,outfile,'')
+
+i4 = '/users/mcqi/path/file2.txt'
+e4 = '/users/mcqi/path/file2.txt'
+outfile = 'D:\path\file-other-stuff2.txt'
+t4 = outfile(i4,outfile,'')
+
+i5 = ''
+e5 = 'D:\path\file-other-stuff2.txt'
+outfile = 'D:\path\file-other-stuff2.txt'
+t5 = outfile(i5,outfile)
+
+st = teststring(i1,t1,e1)
+call teststring i2 t2 e2
+call teststring i3 t3 e3
+call teststring i4 t4 e4
+st = teststring(i5,t5,e5)
+call testemptystring t5 e5 i5 
+
+if tf > 0
+  then say center('  There were 'tf' errors  ',80,'=')
+  else say center('  All tests pass  ',80,'^')
 exit
+
+
 

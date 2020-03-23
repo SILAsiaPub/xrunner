@@ -7,11 +7,11 @@ rexxtasks:
 	pstr = ""
 	first = substr(value,1,1)
 	select
-		when func == 'inputfile' then lineout(outf,'outfile =' stringwithvar(par.1))
+		when func == 'inputfile' then lineout(outf,'outfile =' rxstringwithvar(par.1))
 		when name == 't' & first == ':'  then
 			do
 				do p = 1 to 6 by 1
-					if length(par.p) > 0 then pstr = pstr stringwithvar(par.p)
+					if length(par.p) > 0 then pstr = pstr rxstringwithvar(par.p)
 					call info 5 pstr
 				end
 				/* now write result to file */

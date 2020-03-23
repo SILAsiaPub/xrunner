@@ -1,13 +1,18 @@
 listseparator:
-  parse ARG list
-  sep = ''
-  select
-    when list == 'list' then sep = ' '
-    when list == 'semicolon-list' then sep = ';'
-    when list == 'equal-list' then sep = '='
-    when list == 'tilde-list' then sep = '~'
-    when list == 'underscore-list' then sep = '_'
-    otherwise nop
-  end
-return sep
+	parse arg listtype
+	select
+		when listtype == 'list' then
+			separator = ' '
+		when listtype == 'file-list' then
+			separator = r'\r?\n'
+		when listtype == 'equal-list' then
+			separator = '='
+		when listtype == 'semicolon-list' then
+			separator = ';'
+		when listtype == 'tilde-list' then
+			separator = '~'
+		otherwise
+			separator = ' '
+	end
+return separator
 

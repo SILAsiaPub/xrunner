@@ -39,9 +39,9 @@ goto :eof
   if '%dp%' == 'xsltstringwithvar.rexx' set dependency=+teststring.rexx
   if '%dp%' == 'rxstringwithvar.rexx' set dependency=+teststring.rexx
   if '%dp%' == 'xrunini.rexx' set dependency=+xsltstringwithvar.rexx+checkdir.rexx
-  if '%dp%' == 'projtxt.rexx' set dependency=+rexxvar.rexx+rxstringwithvar.rexx
+  if '%dp%' == 'projtxt.rexx' set dependency=+rxstringwithvar.rexx+listseparator.rexx+checkdir.rexx
   rem if '%dp%' == 'rexxini.rexx' set dependency=+writecmdtasks.rexx+writecmdvar.rexx+inisection.rexx+nameext.rexx+rexxvar.rexx+rexxvarwithvar.rexx+rexxtasks.rexx+writexslt.rexx+stringwithvar.rexx
-  set dependency=%dependency%+info.rexx
+  set dependency=%dependency%+info.rexx+teststring.rexx+testemptystring.rexx
 goto :eof
 
 :loopfiles

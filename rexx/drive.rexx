@@ -1,8 +1,9 @@
 drive:
 	parse arg p
-	if address() == "bash" then
-	  rv = ""
-	else
-	  rv = filespec("D",p)
+  rv = filespec("D",p)
+  /* rv = ''
+  if os == "WIN64" 
+    then rv = filespec("D",p)
+    else nop */
 return rv
 

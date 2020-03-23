@@ -1,5 +1,6 @@
 parse source os . .
 infolevel = 0
+trace n
 tf = 0
 i1 = 'D:\path\file.txt'
 e1 = 'file'
