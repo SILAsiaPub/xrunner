@@ -27,6 +27,7 @@
    <textarea name="DataArea" rows="18" cols=150 readonly></textarea>
    <input type="BUTTON" value="Edit project.txt file" onclick="call editFileExternal(projectTxt)" class="floatright halfbutton">
    <input type="BUTTON" value="Refresh from source" onclick="reloadProject(projectTxt)" class="">
+   <button onclick="call RunCmd2('start', '', ShowSelectedFolder.Value)" class="halfbutton" >Open Project folder</button>
   </form>
 
   <div class="settings">
@@ -126,9 +127,10 @@
   <button onclick="editFileExternal('Xrunner.hta')" name="LoadValues" id="LoadValues" class="inibutton">Edit Xrunner.hta</button>
   <button onclick="editFileExternal('xrun.cmd')" name="LoadValues" id="LoadValues" class="inibutton">Edit xrun.cmd expert only!</button> 
   <button onclick="call RunCmd('setup/md2html.cmd', 'C:\ProgramData\xrun\xrunner.md')" class="inibutton" >Update Xrunner.html</button>
-  <button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button>
-  <button onclick="call editFileWithProgram(xrunxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">View xrun.xslt</button>
-  <!--<button onclick="call editFileWithProgram(setupvarxslt, xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button> -->
+  <button onclick="call editFileWithProgram('scripts\variable2xslt-3.xslt', xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">Edit variable2xslt-3.xslt</button>
+  <button onclick="call editFileWithProgram('scripts\xrun.xslt', xmleditor)" name="LoadValues" id="LoadValues" class="inibutton">View xrun.xslt</button>
+
+  <button onclick="call RunCmd2('start', '', ShowSelectedFolder.Value)" class="inibutton" >Open Project folder</button>
 </div>
 <div id="lastcmd"></div>
        </body>

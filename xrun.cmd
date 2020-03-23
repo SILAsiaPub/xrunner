@@ -2,8 +2,8 @@
 :: Usage: xrun C:\path\project.txt [group [infolevel [pauseatend [unittest]]]]
 :: Note: Xrun requires a project file. The group parameter is normally a letter a-t but can be nothing. If nothing all groups are run.
 @echo off
-set echoatstart=%~3
-if "%echoatstart%" == "5" echo on
+
+if "%~3" == "5" echo on
 rem 
 set projectfile=%1
 if not exist %1 (
@@ -137,7 +137,7 @@ goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set checkpath=%~1
   set drivepath=%~dp1
-  if not defined checkpath echo missing required directory parameter for :checkdir& echo %funcendtext% %0  & goto :eof
+  if not defined checkpath echo missing required directory parameter for :checkdir& echo. %funcendtext% %0  & goto :eof
   set ext=%~x1
   if defined ext set checkpath=%~dp1
   if defined ext set checkpath=%checkpath:~0,-1%
@@ -260,6 +260,30 @@ goto :eof
   if defined xcopy set curcommand=xcopy /y/s "%infile%" "%outfile%"
   if defined xcopy if "%fn1%" == "%fn2%" set curcommand=xcopy /y/s "%infile%" "%outpath%"
   %curcommand%
+  @call :funcendtest %0
+goto :eof
+
+:file
+:: Description: Provides copying with exit on failure
+:: Usage: call :copy append|xcopy|move infile outfile
+:: Depends on: :infile, :outfile, :inccount :funcend
+:: Uddated: 2018-11-03
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  call :infile "%~2" %0
+  call :outfile "%~3" "%~dpn1-copy%~x1"
+  set fn1=%~nx2
+  set fn2=%~nx3
+  set action=%~1
+  if not defined action echo missing parm 3 append|xcopy|move|copy & goto :eof
+  if defined missinginput echo missing input file & goto :eof
+  call :inccount
+  rem echo on
+  if "%action%" == "append" set curcommand=copy /y "%outfile%"+"%infile%" "%outfile%" 
+  if "%action%" == "copy" set curcommand=copy /y "%infile%" "%outfile%"
+  if "%action%" == "xcopy"  set curcommand=xcopy /y/s "%infile%" "%outfile%"
+  if "%action%" == "move"  set curcommand=move /y "%infile%" "%outfile%"
+  %curcommand%
+  rem echo off
   @call :funcendtest %0
 goto :eof
 
@@ -421,7 +445,7 @@ goto :eof
 goto :eof
 
 :funcendtest
-:: Description: Used with func that out put files. Like XSLT, cct, command2file
+:: Description: Used with func that output files. Like XSLT, cct, command2file
 :: Usage: call :funcend %0
   set functest=%~1
   @if defined info2 if exist "%outfile%" echo.
@@ -464,12 +488,61 @@ goto :eof
   if not exist "%infile%" if defined info4 echo %funcendtext% %0 
   if not exist "%infile%" goto :eof
   set command=%iconv% -f CP1252 -t UTF-8 "%infile%"
-
   @if defined info2 echo.
   @if defined info2 echo call %command%
   call %command% > "%outfile%"
   set utreturn=%par1%, %par2%, %par3%, %projectpath%\tmp\iconv-%~nx1, 
   @call :funcendtest %0
+goto :eof
+
+:ifequal
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8'"
+  set t1=%~1
+  set t2=%~2
+  set action=%~3
+  set altaction=%~4
+  set actpar1=%~5
+  set actpar2=%~6
+  set actpar3=%~7
+  set actpar4=%~8
+  set firstact=%action:~0,1%
+  set firstaltact=%altaction:~0,1%
+  if "%t1%" == "%t2%" (
+    @if defined info2 echo "%t1%" ==  "%t2%" are equal
+    if ~%firstact% neq ~: (
+      rem @if defined info3 echo call :taskgroup %action%  "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
+      call :taskgroup %action% ""%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
+    ) else (
+      rem @if defined info3 echo call %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+      call %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+    )
+  ) else (
+    @if defined info3 echo "%t1%" ==  "%t2%" are NOT equal
+    if ~%firstaltact% neq ~: (
+      rem @if defined info3 echo call :taskgroup %altaction% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+      call :taskgroup %altaction% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+    ) else (
+      rem @if defined info3 echo call %altaction% "%actpar1%" "%actpar1%" "%actpar1%" "%actpar1%"
+      call %altaction% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+    )
+  )
+  @call :funcend %0
+goto :eof
+
+:ifnotequal
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
+  set t1=%~1
+  set t2=%~2
+  set action=%~3
+  set firstact=%action:~0,1%
+  if ~%firstact% NEQ ~: (
+    @if defined info3 echo if "%t1%" NEQ "%t2%" call :taskgroup %action% "%~4" "%~5" "%~6" "%~7"
+    if "%t1%" NEQ "%t2%" call :taskgroup %action%  "%~4" "%~5" "%~6" "%~7"
+  ) else (
+    @if defined info3 echo if "%t1%" NEQ "%t2%" call %action%  "%~4" "%~5" "%~6" "%~7"
+    if "%t1%" NEQ "%t2%" call %action%  "%~4" "%~5" "%~6" "%~7"
+  )
+  @call :funcend %0
 goto :eof
 
 :ifexist
@@ -485,7 +558,7 @@ goto :eof
   set param5=%~5
   set param6=%~6
   call :inccount
-  if not defined testfile echo Error: missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
+  if not defined testfile echoError:  missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
   if not defined param2 echo Error: missing action param2& echo %funcendtext% %0 error2 & goto :eof
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
   for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
@@ -612,6 +685,7 @@ goto :eof
   @call :funcend %0
 goto :eof
 
+
 :iniparse4xslt
 :: Description: Parse the = delimited data and write to xslt . Skips sections and can exit when
 :: Usage: call :iniparse4xslt outfile section element att1name att1val att2name att2val
@@ -637,8 +711,8 @@ goto :eof
   if defined att2name set attriblist2=%att2name%="tokenize($%att1val%,' ')"
   if exist insection.txt (
     if defined info3 echo     variable written
-  echo   ^<%element% %attrib1% %attrib2%/^> >> "%outfile%"
-  if %att1val% neq %att1val:_list=% echo   ^<%element% %attriblist1% %attriblist2%/^> >> "%outfile%"
+    echo   ^<%element% %attrib1% %attrib2%/^> >> "%outfile%"
+    if %att1val% neq %att1val:_list=% echo   ^<%element% %attriblist1% %attriblist2%/^> >> "%outfile%"
   )
   @call :funcend %0
 goto :eof
@@ -748,8 +822,8 @@ goto :eof
   for /L %%v in (3,1,9) Do call :last par %%v
   set grouporfunc=%grouporfunc:'="%
   if defined last echo %last%
-  if "%grouporfunc:~0,1%" == ":" FOR /F " delims=" %%s IN ('dir /b /a:d %basedir%') DO call :%grouporfunc% "%%s" %numbparam%
-  if "%grouporfunc:~0,1%" neq ":" FOR /F " delims=" %%s IN ('dir /b /a:d %basedir%') DO call :taskgroup %grouporfunc% "%%s" %numbparam%
+  if "%grouporfunc:~0,1%" == ":" FOR /F " delims=" %%s IN ('dir /b /a:d "%basedir%"') DO call :%grouporfunc% "%%s" %numbparam%
+  if "%grouporfunc:~0,1%" neq ":" FOR /F " delims=" %%s IN ('dir /b /a:d "%basedir%"') DO call :taskgroup %grouporfunc% "%%s" %numbparam%
   @call :funcend %0
   @if defined loopdirecho echo off
 goto :eof
@@ -784,14 +858,13 @@ goto :eof
   @if defined loopfilesecho echo off
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
   for /L %%v in (3,1,9) Do call :last par %%v
-  @if defined loopfilesecho echo on
   if defined info3 if defined numbparam set numbparam
   if defined info4 if defined comment echo %last%
   if not defined unittest (
     if "%grouporfunc:~0,1%" == ":" (
-        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call %grouporfunc% "%%s" %numbparam%
+        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n "%filespec%"') DO  call %grouporfunc% "%%s" %numbparam%
       ) else (
-        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
+        FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n "%filespec%"') DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
   )  
     )  
   )  
@@ -1239,7 +1312,6 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
-
 :setinfolevel
 :: Description: Used for initial setup and after xrun.ini and project.txt
 :: Usage: call :setinfolevel numb-level
@@ -1254,8 +1326,6 @@ goto :eof
   if "%~1" geq "3" set clfeedback=on
   set funcstarttext={---
   set funcendtext=       ----}
-  rem turn on echo for debugging
-  if "%~1" == "5" echo on
   rem turn off echo for the remaining levels
   rem if  "%~1" LSS "5" echo off
   set utreturn=%~1, %info1%, %info2%, %info4%, %info3%, %info5%, %funcstarttext%, %funcendtext%
@@ -1304,7 +1374,7 @@ goto :eof
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
   rem if defined info2 echo Info: Java:saxon parse project.txt
-  call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%
+  call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%  USERPROFILE=%USERPROFILE%
   rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
   rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
   rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
@@ -1364,6 +1434,7 @@ goto :eof
   set p6=%~6
   set p7=%~8
   set p8=%~8
+
 start "" %p1% "%p2%" "%p3%" "%p4%"
 goto :eof
 
@@ -1444,23 +1515,27 @@ goto :eof
 :: Description: Loop that triggers each task in the group.
 :: Usage: call :taskgroup group
 :: Depends on: unittestaccumulate. Can depend on any procedure in the input task group.
-  @call :funcbegin %0 "%~1 %~2 %~3 %~4 %~5 %~6"
-  @if defined fatal if defined info4 echo %funcendtext% %0 %~1 
+@echo off
+  @if defined fatal if defined info4 echo %funcendtext% %0 "%~1 '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8' '%~9'"
   @if defined fatal goto :eof
-  @if defined tasgroupecho echo on
+  @call :funcbegin %0 "%~1 '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8' '%~9'"
   set group=%~1
-  set tgvar1=%~2
-  set tgvar2=%~3
-  set tgvar3=%~4
-  set tgvar4=%~5
-  set tgvar5=%~6
+  rem Do not remove these tgvarX variables some sub groups rely on them
+  set tgvar2=%~2
+  set tgvar3=%~3
+  set tgvar4=%~4
+  set tgvar5=%~5
+  set tgvar6=%~6
+  set tgvar7=%~7
+  set tgvar8=%~8
+  set tgvar9=%~9
   if not exist "scripts\%group%.xrun" call :fatal %0 "Taskgroup file %group%.xrun missing!" "Process can't preceed." & goto :eof
+
   set taskend=!%~1count!
   rem if not defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :task %group%%%c
-  if not defined unittest FOR /F "eol=] delims=[" %%q IN (scripts\%group%.xrun) DO %%q
+  if not defined unittest FOR /F "eol=] delims=[" %%q IN (scripts\%group%.xrun) DO %%q "%~2" "%~3" "%~4" "%~5" "%~7" "%~8" "%~9"
   set utreturn= %group%
   if defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :unittestaccumulate %group%%%c
-  @if defined tasgroupecho echo off
   @call :funcend %0 %~1
 goto :eof
 
@@ -1474,7 +1549,9 @@ goto :eof
   if "%line:~0,1%" == "[" goto :eof
   if "%line:~0,1%" == "[" @call :funcend %0 
   if not defined sectionstart goto :eof
+
   if defined sectionstart if "%line:~0,2%" == "t=" echo call %line:~2%>> scripts\%sectionget%-test.xrun   
+
   set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
@@ -1545,7 +1622,7 @@ goto :eof
     if defined expect%%n (
       echo test output%%n: !utreturn%%n!
       echo    expected%%n: !expect%%n!
-      echo on
+      rem echo on
       if "!utreturn%%n!" == "!expect%%n!" set t=!t!0
       if "!utreturn%%n!" neq "!expect%%n!"  set t=!t!1
       echo off
@@ -1731,14 +1808,15 @@ goto :eof
 :: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
 :: Required variables: java saxon9
   if defined fatal goto :eof
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
   call :inccount
   if defined scripts set script=%scripts%\%~1
   if not defined scripts set script=scripts\%~1
   call :infile "%~2" %0
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
   set params=%~4
-  if not exist "%script%" call :fatal %0 "missing script: %script%"
+  rem if not exist "%script%" call :fatal %0 "missing script: %script%"
+  if not exist "%script%" call :scriptfind "%script%" %0
   if defined missinginput call :fatal %0 "infile not found!"
   if defined params set params=%params:'="%
   rem if defined params set params=%params:::==%
@@ -1751,14 +1829,37 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
+:scriptfind
+:: Description: Find script if it does not exist in the scritps folder
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  set sname=%~1
+  set funcname=%~2
+  rem if the script was one of several like in CCT this will skip if it exists.
+  if exist "%scripts%\%sname%" (
+    echo %sname% found!
+    @if defined info4 echo %funcendtext% %0
+    goto :eof
+    )
+  call :nameext "%sname%"
+  if defined info3 echo.
+  if defined info3 echo ????? Searching other projects for missing script: %nameext% ?????
+  if exist "%cd%\scripts\generic-pool\%nameext%" (
+    copy "%cd%\scripts\generic-pool\%nameext%" "%scripts%"
+    ) else (
+    FOR /F "" %%f IN ('dir /b /s %projecthome%\%nameext%') DO xcopy "%%f" "%scripts%" /d /y 
+    )
+  if not exist "%scripts%\%nameext%" call :fatal %funcname% "missing script: %nameext%"
+  @call :funcend %0
+goto :eof
+
 :funcbegin
 :: Descriptions: takes initialization out of funcs
   @set func=%~1
   @rem the following line removes the func colon at the begining. Not removing it causes a crash.
   @set funcname=%func:~1%
-  @set params=%~2
-  @if defined info3 echo %func% %params%
-  @if defined info4 echo %funcstarttext% %func% %params%
-  @if defined %funcname%echo echo on
+  @set fparams=%~2
+  @if defined info3 echo %func% %fparams%
+  @if defined info4 echo %funcstarttext% %func% %fparams%
+  rem @if defined %funcname%echo echo on
 @goto :eof
 
