@@ -1,0 +1,20 @@
+[variables]
+title=Flexible Menu creation
+screen_file-list=%projectpath%\source\screens.tsv
+item_file-list=%projectpath%\source\items.tsv
+collection_list=C01
+titlelanguage=default
+subtitlelanguage=
+show-titles=true
+show-subtitles=false
+show-references=false
+launch-action=contents
+zipfile=%projectpath%\zip\autogen-contents.zip
+
+
+[a]
+button=Make contents menu
+t=:xslt RAB-contents-menu-xml-from-tsv-v4.xslt "blank.xml"
+t=:outputfile "%projectpath%\output\contents.xml" start
+t=:command "if exist '%zipfile%' del '%zipfile%'"
+t=:command "call '%zip%' a -tzip '%zipfile%' '*'"  "%projectpath%\output\" "%zipfile%"
