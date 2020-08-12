@@ -18,7 +18,7 @@ set projectpath=%~dp1
 set projectpath=%projectpath:~0,-1%
 set groupin=%2
 set infolevel=%3
-set Pauseatend=%4
+set pauseatend=%4
 set unittest=%5
 if not defined infolevel set infolevel=0
 setlocal enabledelayedexpansion
@@ -34,6 +34,7 @@ goto :eof
 :appendfile
 :: Description: Appends one file to the end of another file.
 :: Usage: call : appendfile filetoadd filetoappendto
+:: Depends on: funcbegin funcend 
   if defined fatal goto :eof
   rem echo on
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
@@ -42,6 +43,18 @@ goto :eof
   if exist "%~1" type "%~1" >> "%~2"
   set utreturn=%~1, %~2
   rem echo off
+  @call :funcend %0
+goto :eof
+
+:appendtofile
+:: Description: Appends text to the end of a file.
+:: Usage: call : appendtofile text-to-append filetoappendto first
+:: Depends on: funcbegin funcend outfile
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  set text=%~1
+  set outfile=%~2
+  echo %text% >> "%outfile%"
   @call :funcend %0
 goto :eof
 
@@ -265,12 +278,12 @@ goto :eof
 
 :file
 :: Description: Provides copying with exit on failure
-:: Usage: call :copy append|xcopy|move infile outfile
+:: Usage: call :copy append|xcopy|move|del infile outfile
 :: Depends on: :infile, :outfile, :inccount :funcend
 :: Uddated: 2018-11-03
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :infile "%~2" %0
-  call :outfile "%~3" "%~dpn1-copy%~x1"
+  call :outfile "%~3" "%~dpn2-copy%~x2"
   set fn1=%~nx2
   set fn2=%~nx3
   set action=%~1
@@ -280,8 +293,9 @@ goto :eof
   rem echo on
   if "%action%" == "append" set curcommand=copy /y "%outfile%"+"%infile%" "%outfile%" 
   if "%action%" == "copy" set curcommand=copy /y "%infile%" "%outfile%"
-  if "%action%" == "xcopy"  set curcommand=xcopy /y/s "%infile%" "%outfile%"
+  if "%action%" == "xcopy"  set curcommand=xcopy /i/y/s "%infile%" "%outfile%"
   if "%action%" == "move"  set curcommand=move /y "%infile%" "%outfile%"
+rem  if "%action%" == "del"  if exist "%infile%" del /q "%infile%" & @call :funcend %0 & goto :eof
   %curcommand%
   rem echo off
   @call :funcendtest %0
@@ -354,6 +368,13 @@ goto :eof
   @call :funcend %0
 goto :eof
 
+:delfile
+:: Description: Delete a file if it exists
+  @call :funcbegin %0 "'%~1'"
+  if exist "%~1" del "%~1"
+  @call :funcend %0
+goto :eof
+
 :detectdateformat
 :: Description: Get the date format from the Registery: 0=US 1=AU 2=iso
 :: Usage: call :detectdateformat
@@ -380,6 +401,9 @@ goto :eof
   set drivepath=%utdp:~0,-1%
   set utreturn=%drivepath%
   @call :funcend %0
+goto :eof
+
+:dummy
 goto :eof
 
 :echo
@@ -444,6 +468,16 @@ goto :eof
   if "%~1" == "output" Echo Output: %~2
 goto :eof
 
+:funcbegin
+:: Descriptions: takes initialization out of funcs
+  @set func=%~1
+  @rem the following line removes the func colon at the begining. Not removing it causes a crash.
+  @set funcname=%func:~1%
+  @set fparams=%~2
+  @if defined info3 echo %func% %fparams%
+  @if defined info4 echo %funcstarttext% %func% %fparams%
+  @if defined info4 @if defined %funcname%echo echo  ============== %funcname%echo is ON =============== & echo on
+@goto :eof
 :funcendtest
 :: Description: Used with func that output files. Like XSLT, cct, command2file
 :: Usage: call :funcend %0
@@ -468,7 +502,7 @@ goto :eof
   @if defined info4 echo %funcendtext% %func%
   @if defined %func:~1%pause pause
   @rem the following form of %func:~1% removes the colon from the begining of the func.
-  @if defined %func:~1%echo echo off
+  @if defined !func:~1!echo echo ========= !func:~1!echo switched OFF =========& echo off
 @goto :eof
 
 :iconv
@@ -508,7 +542,7 @@ goto :eof
   set firstact=%action:~0,1%
   set firstaltact=%altaction:~0,1%
   if "%t1%" == "%t2%" (
-    @if defined info2 echo "%t1%" ==  "%t2%" are equal
+    @if defined info3 echo "%t1%" ==  "%t2%" are equal
     if ~%firstact% neq ~: (
       rem @if defined info3 echo call :taskgroup %action%  "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
       call :taskgroup %action% ""%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
@@ -600,7 +634,7 @@ goto :eof
   @call :funcbegin %0 "'%~1'"
   set /A %~1+=1
   set utreturn=!%~1!
-  @call :funcend %0
+  @call :funcend %0 !%~1!
 goto :eof
 
 :exit-prompt
@@ -744,41 +778,48 @@ goto :eof
 
 :jade
 :: Description: Create html/xml from jade file (now pug) Still uses jade extension
-:: Usage: call :jade "infile"  "outfile"
+:: Usage: call :jade "infile" "outfile" start
 :: Depends on: inccount, infile, outfile, nameext, name, funcend 
 :: External program: NodeJS npm program jade
   @call :funcbegin %0 "'%~1' '%~2'"
   call :inccount
   call :infile %~1
-  call :name "%infile%"
-  call :outfile "%~2" "%projectpath%\tmp\%name%.html"
+  set outfile=%~2
+  call :drivepath "%outfile%"
   call :nameext "%outfile%"
-  set outpatha=%~dp2
-  set outpath=%outpatha:~0,-1%
-  @if defined info2 echo on
-  call jade -P -E "%ext%" -o "%outpath%" "%infile%"
-  @if defined info2 echo off
-  rem ren "%outpath%\%name%.html" "%nameext%"
+  if not defined outfile set outfile=%projectpath%\tmp\jade-%count%.html
+  set start=%~3
+  echo jade -P -E "%ext:~1%" -o "%drivepath%" "%infile%"
+  call jade -P -E "%ext:~1%" -o "%drivepath%" "%infile%"
+  rem echo call jade -P ^< "%infile%" ^> "%outfile%"
+  rem call jade -P < "%infile%" > "%outfile%"
+rem  @if defined info2 echo off
+  rem ren "%outpath%\%infilename%%ext%" "%nameext%"
+  if defined start start "" "%~2"
   @call :funcendtest %0
 goto :eof
 
 :javahometest
-set JAVA_HOME=%JAVA_HOME:"=%
-set JAVA_EXE=%JAVA_HOME%/bin/java.exe
-if not exist "%JAVA_EXE%" (
-  set javahome=ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 
-  call :javainpathtest
-  )
+  @call :funcbegin %0
+  set JAVA_HOME=%JAVA_HOME:"=%
+  set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+  if not exist "%JAVA_EXE%" (
+    set javahome=ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 
+    call :javainpathtest
+    )
+  @call :funcend %0
 goto :eof
 
 :javainpathtest
-set JAVA_EXE=java.exe
-%JAVA_EXE% -version >NUL 2>&1
-if "%ERRORLEVEL%" neq "0" (
-  set javapath=Error: No 'java' command could be found in your PATH.
-  set nojava=true
-  call :javanotfound 
-  )
+  @call :funcbegin %0
+  set JAVA_EXE=java.exe
+  %JAVA_EXE% -version >NUL 2>&1
+  if "%ERRORLEVEL%" neq "0" (
+    set javapath=Error: No 'java' command could be found in your PATH.
+    set nojava=true
+    call :javanotfound 
+    )
+  @call :funcend %0
 goto :eof
 
 :javanotfound
@@ -876,7 +917,7 @@ goto :eof
 
 :looplist
 :: Description: Used to loop through list supplied in a file
-:: Usage: call :loopfiles sub_name list-file_specs [param[3-9]]
+:: Usage: call :looplist sub_name list-file_specs [param[3-9]]
 :: Depends on: appendnumbparam, last, taskgroup. Can also use any other function.
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8' '%~9'"
   if defined fatal goto :eof
@@ -1025,7 +1066,7 @@ goto :eof
 :: Description: Returns a variable name containg just the name from the path.
   @call :funcbegin %0 %~1
   set name=%~n1
-  set name
+  @if defined info3 set name
   @call :funcend %0
 goto :eof
 
@@ -1042,16 +1083,17 @@ goto :eof
 :outfile
 :: Description: If out file is specifically set then uses that else uses supplied name.
 :: Usage: call :outfile "C:\path\file.ext" "%cd%\tmp\%script%.xml" nocheck
-  @call :funcbegin %0 "'%~1' '%~2' %~3"
+:: Depends on: funcbegin funcend
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set toutfile=%~1
-  set outpath=%~dp1
-  rem the folloing is to preserve wildcards in the outfile. Since *.* when using %~nx1 becomes . not *.*
-  set outnx=!toutfile:%outpath%=!
-  @if defined info4 echo %outnx%
+  set outnx=%~nx1
   set defaultoutfile=%~2
   set defaultoutdp=%~dp2
   set defaultoutnx=%~nx2
-  rem if defined info1 set defaultoutfile
+  set outpath=%~dp1
+  rem the folloing is to preserve wildcards in the outfile. Since *.* when using %~nx1 becomes . not *.*
+  @if defined info4 set outnx
+  @if defined info4 set defaultoutfile
   set nocheck=%~3
   rem now if toutfile is not defined then use default value
   if defined toutfile (set outfile=%toutfile%) else (set outfile=%defaultoutfile%)
@@ -1063,6 +1105,7 @@ goto :eof
   rem if outfile exists then rename to file.ext.prev; this works with wild cards too now.
   if exist "%outfile%" ren "%outfile%" "%outnx%.prev"
   set utreturn=%outfile%, %defaultoutfile%, %nocheck%, %outpath%, %outnx%
+  if defined info4 set utreturn
   @if defined info4 echo.
   @if defined info4 echo Info: outfile = %outfile%
   @call :funcend %0
@@ -1113,7 +1156,7 @@ goto :eof
 
 :perl
 :: Description: Privides interface to perl scripts
-:: Usage: call :cct script.cct ["infile.txt" ["outfile.txt"]]
+:: Usage: call :cct script.cct ["infile.txt" ["outfile.txt" ["par1"]]
 :: Depends on: inccount, infile, outfile, funcend
 :: External program: ccw32.exe https://software.sil.org/cc/
 :: Required variable: ccw32
@@ -1130,21 +1173,22 @@ goto :eof
   if defined append set cctparam=-u -b -n -a
   if not exist "%perl%" call :fatal %0 "missing perl.exe file" & goto :eof
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%script%.xml"
+  set par1=%~4
   if defined fatal goto :eof
-  set curcommand="%perl%" "%script%" "%infile%" "%outfile%"
+  set curcommand="%perl%" "%script%" "%infile%" "%outfile%" "%par1%"
   @if defined info2 echo. & echo %curcommand%
   set basepath=%cd%
   cd /D "%scripts%"
   call %curcommand%
   cd /D "%basepath%"
-  set utreturn=%perl%, %script%, %infile%, %outfile%
+  set utreturn=%perl%, %script%, %infile%, %outfile%, %par1%
   @call :funcendtest %0
 goto :eof
 
 
 :prince
 :: Description: Make PDF using PrinceXML
-:: Usage: call :prince [infile [outfile [css]]]
+:: Usage: call :prince [infile [outfile [css]]] [infile2] [infile3] [infile4] [infile5] [infile6] [infile7]
 :: Depends on: infile, outfile, funcend
 :: External program: prince.exe  https://www.princexml.com/
 :: External program: prince
@@ -1152,8 +1196,20 @@ goto :eof
   call :infile "%~1" %0
   call :outfile "%~2" "%projectpath%\output\output.pdf" 
   set css=%~3
+  set infile2=%~4
+  set infile3=%~5
+  set infile4=%~6
+  set infile5=%~7
+  set infile6=%~8
+  set infile7=%~9
+  if defined infile2 set infile2="%infile2%"
+  if defined infile3 set infile3="%infile3%"
+  if defined infile4 set infile4="%infile4%"
+  if defined infile5 set infile5="%infile5%"
+  if defined infile6 set infile6="%infile6%"
+  if defined infile7 set infile7="%infile7%"
   if defined css set css=-s "%css%"
-  set curcommand=call "%prince%" %css% "%infile%" -o "%outfile%"
+  set curcommand=call "%prince%" %css% "%infile%" %infile2% %infile3% %infile4% %infile5% %infile6% %infile7% -o "%outfile%"
   @if defined info2 echo %curcommand%
   %curcommand%
   set utreturn=%infile%, %outfile%, %css%, %prince%, %curcommand%
@@ -1163,7 +1219,7 @@ goto :eof
 :ptbook
 :: Description: Extract USX from Paratext
 :: Usage: call :ptbook project book [outpath] [write] [usfm]
-:: Depends on: outfile, funcend
+:: Depends on: outfile, funcend, ptbkno
 :: External program: rdwrtp8.exe from https://pt8.paratext.org/
 :: Required variables: rdwrtp8
   set proj=%~1
@@ -1171,9 +1227,23 @@ goto :eof
   set outpath=%~3
   set write=%~4
   set usfm=%~5
-  if not defined write set ptio=-r
+  if not defined write set ptio=-r 
   if defined write set ptio=-w
+  call :ptbkno %book%
   if not defined usfm set usx=-x
+  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx"
+  if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
+  set curcommand="%rdwrtp8%" %ptio% %proj% %book% 0 "%outfile%" %usx%
+  if defined info2 echo %curcommand%
+  call %curcommand%
+  @call :funcendtest %0
+goto :eof
+
+:ptbkno
+:: Description: set bknumb variable based on book 3 letter book code
+:: Usage: call :ptbkno book
+
+  set book=%~1
   if "%book%" == "GEN" set bknumb=001
   if "%book%" == "EXO" set bknumb=002
   if "%book%" == "LEV" set bknumb=003
@@ -1273,12 +1343,6 @@ goto :eof
   if "%book%" == "GLO" set bknumb=109
   if "%book%" == "TDX" set bknumb=110
   if "%book%" == "NDX" set bknumb=111
-  if defined outpath call :outfile "%outpath%\%bknumb%%book%.usx"
-  if not defined outpath call :outfile "" "%projectpath%\usx\%bknumb%%book%.usx"
-  set curcommand="%rdwrtp8%" %ptio% %proj% %book% 0 "%outfile%" %usx%
-  if defined info3 echo %curcommand%
-  call %curcommand%
-  @call :funcendtest %0
 goto :eof
 
 :regex
@@ -1353,35 +1417,36 @@ goto :eof
   set /A count=0
   echo.
   call :variableslist "setup\xrun.ini"
-  rem call :variableslist "%projectpath%\project.txt" a
+  @rem call :variableslist "%projectpath%\project.txt" a
   @set utreturn=
   call :detectdateformat
-  rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
-  rem set maxsubcount=%defaulttaskcount%
-  rem if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
-  call :javahometest
+  @rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
+  @rem set maxsubcount=%defaulttaskcount%
+  @rem if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
+  @rem call :javahometest
   if defined nojava set fatal=on & goto :eof
   if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
   call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt setup
-  rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
-  rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
+  @rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
+  @rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
   copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
-  rem create ?.xrun with batch
-  rem  echo on 
-  rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
-  rem  echo off 
-  rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
+  @rem create ?.xrun with batch
+  @rem  echo on 
+  @rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
+  @rem  echo off 
+  @rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
-  rem if defined info2 echo Info: Java:saxon parse project.txt
+  @rem if defined info2 echo Info: Java:saxon parse project.txt
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%  USERPROFILE=%USERPROFILE%
-  rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
-  rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
-  rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
-  rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
+  @rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
+  @rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
-  rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
-  rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
+  if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
+  @rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
+  @rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
   set scripts=%projectpath%\scripts
   if not exist "%scripts%\inc-lookup.xslt" copy "scripts\inc-lookup.xslt" "%scripts%\inc-lookup.xslt"
   if not exist "%scripts%\inc-file2uri.xslt" copy "scripts\inc-file2uri.xslt" "%scripts%\inc-file2uri.xslt"
@@ -1716,7 +1781,7 @@ goto :eof
   if not defined xmlfile echo xml file parameter missing & goto :eof
   if not exist "%xmlfile%" echo XML file not found & goto :eof
   echo Info: Validating xml
-  call xml val -e -b "%xmlfile%"
+  call "%xml%" val -e -b "%xmlfile%"
 goto :eof
 
 :validaterng
@@ -1829,6 +1894,64 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
+:xslt1
+:: Description: Runs Java with xmlScarlet to process XSLT1 transformations.
+:: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
+:: Depends on: inccount, infile, outfile, fatal, funcend
+:: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: Required variables: java saxon9
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  call :inccount
+  if defined scripts set script=%scripts%\%~1
+  if not defined scripts set script=scripts\%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml"
+  set params=%~4
+  rem if not exist "%script%" call :fatal %0 "missing script: %script%"
+  if not exist "%script%" call :scriptfind "%script%" %0
+  if defined missinginput call :fatal %0 "infile not found!"
+  if defined params set params=%params:'="%
+  rem if defined params set params=%params:::==%
+    )
+  if defined fatal goto :eof
+  @if defined info2 echo.
+  @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
+  call "%xml%" tr "%script%" "%infile%" > "%outfile%" 
+  set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @call :funcendtest %0
+goto :eof
+
+:xslt1-ms
+:: Description: Runs Java with xmlScarlet to process XSLT1 transformations.
+:: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
+:: Depends on: inccount, infile, outfile, fatal, funcend
+:: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: Required variables: java saxon9
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  call :inccount
+  if defined scripts set script=%scripts%\%~1
+  if not defined scripts set script=scripts\%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml"
+  set params=%~4
+  rem if not exist "%script%" call :fatal %0 "missing script: %script%"
+  if not exist "%script%" call :scriptfind "%script%" %0
+  if defined missinginput call :fatal %0 "infile not found!"
+  if defined params set params=%params:'="%
+  rem if defined params set params=%params:::==%
+    )
+  if defined fatal goto :eof
+  @if defined info2 echo.
+  @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
+  call "%msxsl%" "%infile%" "%script%" -o "%outfile%" 
+  set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @call :funcendtest %0
+goto :eof
+
 :scriptfind
 :: Description: Find script if it does not exist in the scritps folder
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
@@ -1852,14 +1975,5 @@ goto :eof
   @call :funcend %0
 goto :eof
 
-:funcbegin
-:: Descriptions: takes initialization out of funcs
-  @set func=%~1
-  @rem the following line removes the func colon at the begining. Not removing it causes a crash.
-  @set funcname=%func:~1%
-  @set fparams=%~2
-  @if defined info3 echo %func% %fparams%
-  @if defined info4 echo %funcstarttext% %func% %fparams%
-  rem @if defined %funcname%echo echo on
-@goto :eof
+
 
