@@ -11,8 +11,12 @@ rexxtasks:
 		when name == 't' & first == ':'  then
 			do
 				do p = 1 to 6 by 1
-					if length(par.p) > 0 then pstr = pstr rxstringwithvar(par.p)
-					call info 5 pstr
+					if length(par.p) > 0 then 
+						do 
+							pstr = pstr rxstringwithvar(par.p)
+							call info 5 pstr
+							say par.0
+						end
 				end
 				/* now write result to file */
 				rexxtreturn = lineout(outf,'call' func pstr )
