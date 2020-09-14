@@ -259,6 +259,7 @@ goto :eof
 :: Usage: call :copy infile outfile [append] [xcopy]
 :: Depends on: :infile, :outfile, :inccount :funcend
 :: Uddated: 2018-11-03
+  if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :infile "%~1" %0
   call :outfile "%~2" "%~dpn1-copy%~x1"
@@ -281,6 +282,7 @@ goto :eof
 :: Usage: call :copy append|xcopy|move|del infile outfile
 :: Depends on: :infile, :outfile, :inccount :funcend
 :: Uddated: 2018-11-03
+  if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :infile "%~2" %0
   call :outfile "%~3" "%~dpn2-copy%~x2"
@@ -1227,6 +1229,7 @@ goto :eof
   set outpath=%~3
   set write=%~4
   set usfm=%~5
+  call :checkdir "%outpath%"
   if not defined write set ptio=-r 
   if defined write set ptio=-w
   call :ptbkno %book%
@@ -1416,7 +1419,7 @@ goto :eof
   if not exist "%scripts%" md "%scripts%"
   set /A count=0
   echo.
-  call :variableslist "setup\xrun.ini"
+  call :task2cmd "setup\xrun.ini"
   @rem call :variableslist "%projectpath%\project.txt" a
   @set utreturn=
   call :detectdateformat
