@@ -86,6 +86,8 @@ Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "includelabel_list"; St
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "true_list"; String: "true yes on 1"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "commentlabel"; String: "com"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "needsaxon"; String: "true"; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "detectjava"; String: ""; Flags: createkeyifdoesntexist
+Filename: "{app}\setup\xrun.ini"; Section: "setup"; Key: "setup-type"; String: "java"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "java"; String: "java"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "iconv"; String: "tools\bin\iconv.exe"; Flags: createkeyifdoesntexist
 Filename: "{app}\setup\xrun.ini"; Section: "tools"; Key: "uniq"; String: "tools\bin\uniq.exe"; Flags: createkeyifdoesntexist

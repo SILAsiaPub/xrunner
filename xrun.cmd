@@ -92,23 +92,21 @@ goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :inccount %count%
   set script=%~1
-  set append=%~4
   if not defined script call :fatal %0 "CCT script not supplied!" & goto :eof
   if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!  %scripts%\%script%" & goto :eof
   call :infile "%~2" %0
   if defined missinginput  call :fatal %0 "infile not found!" & goto :eof
   set cctparam=-u -b -q -n
-  if defined append set cctparam=-u -b -n -a
   if not exist "%ccw32%" call :fatal %0 "missing ccw32.exe file" & goto :eof
   set scriptout=%script:.cct,=_%
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
   if defined fatal goto :eof
   set curcommand="%ccw32%" %cctparam% -t "%script%" -o "%outfile%" "%infile%"
   @if defined info2 echo. & echo %curcommand%
-  set basepath=%cd%
-  cd /D "%scripts%"
+
+  pushd "%scripts%"
   call %curcommand%
-  cd /D "%basepath%"
+  popd
   set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
   @call :funcendtest %0
 goto :eof
@@ -123,7 +121,6 @@ goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
   call :inccount %count%
   set script=%~1
-  set append=%~4
   if not defined script call :fatal %0 "CCT script not supplied!" & goto :eof
   if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!  %scripts%\%script%" & goto :eof
   call :infile "%~2" %0
@@ -136,10 +133,9 @@ goto :eof
   if defined fatal goto :eof
   set curcommand="%ccw32%" -a %cctparam% -t "%script%" -o "%outfile%" "%infile%"
   @if defined info2 echo. & echo %curcommand%
-  set basepath=%cd%
-  cd /D "%scripts%"
+  pushd "%scripts%"
   call %curcommand%
-  cd /D "%basepath%"
+  popd
   set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
   @call :funcendtest %0
 goto :eof
@@ -185,11 +181,11 @@ goto :eof
   if defined commandpath (
     if not exist "%commandpath%" mkdir "%commandpath%"
     )
-  if defined commandpath cd /D "%commandpath%"
+  if defined commandpath pushd "%commandpath%"
   if defined commandpath echo current path: %cd%
   @if defined info2 echo %curcommand%
   call %curcommand%
-  if defined commandpath cd /D "%basepath%"
+  if defined commandpath popd
   set utreturn=%curcommand%, %commandpath%, %outfile%
   @if defined outfile @call :funcendtest %0
 goto :eof
@@ -213,10 +209,7 @@ goto :eof
   set append=%~4
   if not defined append if "%commandpath%" == "append" set append=on
   set curcommand=%command:'="%
-  if defined commandpath (
-    set basepath=%cd%
-    cd /d "%commandpath%"
-  )
+  if defined commandpath pushd "%commandpath%"
   if not defined append (
     @if defined info2 echo %curcommand% ^>  "%outfile%"
     call %curcommand% > "%outfile%"
@@ -224,9 +217,7 @@ goto :eof
     @if defined info2 echo %curcommand% ^>^>  "%outfile%"
     call %curcommand% >> "%outfile%"
   )
-  if defined commandpath (
-    cd /D "%basepath%"
-  )
+  if defined commandpath popd
   set utreturn=%command%, %outfile%, %projectpath%\xml\%group%-%count%-%~1-command2file.xml
   @call :funcendtest %0 
 goto :eof
@@ -411,7 +402,11 @@ goto :eof
 :echo
 :: Description: Echo a message
 :: Usage: call :echo "message text"
-  echo %~1
+  if "%~1" == "." (
+    echo.
+  ) else (
+    echo %~1
+  )
 goto :eof
 
 :encoding
@@ -484,8 +479,10 @@ goto :eof
 :: Description: Used with func that output files. Like XSLT, cct, command2file
 :: Usage: call :funcend %0
   set functest=%~1
+  set alttext=%~2
+  if not defined alttext set alttext=Output:
   @if defined info2 if exist "%outfile%" echo.
-  @if defined info1 if exist "%outfile%" echo %green%Output: %outfile% %reset%
+  @if defined info1 if exist "%outfile%" echo %green%%alttext% %outfile% %reset%
   @if defined info1 if exist "%outfile%" set utret3=Output: %outfile%
   @if defined outfile if not exist "%outfile%" Echo %redbg%Task failed: Output file not created! %reset%
   @if defined outfile if not exist "%outfile%" set utret4=color 06
@@ -795,7 +792,7 @@ goto :eof
   call jade -P -E "%ext:~1%" -o "%drivepath%" "%infile%"
   rem echo call jade -P ^< "%infile%" ^> "%outfile%"
   rem call jade -P < "%infile%" > "%outfile%"
-rem  @if defined info2 echo off
+  rem  @if defined info2 echo off
   rem ren "%outpath%\%infilename%%ext%" "%nameext%"
   if defined start start "" "%~2"
   @call :funcendtest %0
@@ -1132,7 +1129,7 @@ goto :eof
   if "%var2%" == "validate" call :validate "%outfile%"
   if "%var3%" == "validate" call :validate "%outfile%"
   set utreturn=%infile%, %outfile%, %var2%, %var3%
-  @call :funcendtest %0
+  @call :funcendtest %0 Renamed:
 goto :eof
 
 :paratextio
@@ -1179,10 +1176,9 @@ goto :eof
   if defined fatal goto :eof
   set curcommand="%perl%" "%script%" "%infile%" "%outfile%" "%par1%"
   @if defined info2 echo. & echo %curcommand%
-  set basepath=%cd%
-  cd /D "%scripts%"
+  pushd "%scripts%"
   call %curcommand%
-  cd /D "%basepath%"
+  popd
   set utreturn=%perl%, %script%, %infile%, %outfile%, %par1%
   @call :funcendtest %0
 goto :eof
@@ -1419,36 +1415,44 @@ goto :eof
   if not exist "%scripts%" md "%scripts%"
   set /A count=0
   echo.
-  call :task2cmd "setup\xrun.ini"
-  @rem call :variableslist "%projectpath%\project.txt" a
-  @set utreturn=
+  call :variableslist "setup\xrun.ini"
   call :detectdateformat
-  @rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
-  @rem set maxsubcount=%defaulttaskcount%
-  @rem if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
-  @rem call :javahometest
+  call :setup-%setup-type%
+  @if defined info1 echo Setup: complete
+  set /A count=0
+  rem set utreturn=%scripts%
+  @call :funcend %0
+goto :eof
+
+:setup-batch
+:: Description: Sets up the xrun files from the project.txt
+:: Usage: call :setup-batch "%projectpath%\project.txt"
+:: Depends on: variableslist, task2cmd
+  @call :funcbegin %0 "'%~1'"
+  call :checkdir "%cd%\scripts"
+  rem call :variableslist "%projectpath%\project.txt" a
+  call :task2cmd "%projectpath%\project.txt"
+  @call :funcend %0
+goto :eof
+
+:setup-java
+:: Description: Sets up the for using Java, Saxon and XSLT
+:: Usage: call :setup-java "%projectpath%\project.txt"
+:: Depends on: variableslist, task2cmd
+  @call :funcbegin %0 "'%~1'"
+  if defined detectjava call :javahometest
   if defined nojava set fatal=on & goto :eof
   if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
   call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt setup
-  @rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
-  @rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
   copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
-  @rem create ?.xrun with batch
-  @rem  echo on 
-  @rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
-  @rem  echo off 
-  @rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
   if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
   if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
   @rem if defined info2 echo Info: Java:saxon parse project.txt
+  rem call xslt3 -xsl:"scripts\variable2xslt-3.sef.json" -s:blank.xml  -o:"%scripts%\project.xslt" 
   call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%  USERPROFILE=%USERPROFILE%
-  @rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
-  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
-  @rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
-  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
   if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
-  @rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
+  if exist "%scripts%\project.xslt" if defined info2 echo Setup: project.xslt from: project.txt
   @rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
   set scripts=%projectpath%\scripts
   if not exist "%scripts%\inc-lookup.xslt" copy "scripts\inc-lookup.xslt" "%scripts%\inc-lookup.xslt"
@@ -1456,18 +1460,49 @@ goto :eof
   if not exist "%scripts%\inc-copy-anything.xslt" copy "scripts\inc-copy-anything.xslt" "%scripts%\inc-copy-anything.xslt"
   call "%projectpath%\tmp\project.cmd"
   if defined model call :loopfiles "%model%\*.*" :modelcheck "%model%"
-  if exist "%scripts%\project.xslt" if defined info2 echo Setup: project.xslt from: project.txt
-  call :setinfolevel %infolevel%
-  @if defined info1 echo Setup: complete
-  set /A count=0
-  set utreturn=%scripts%
   @call :funcend %0
+goto :eof
+
+
+:setup-js
+:: Description: Sets up the for using Java, Saxon and XSLT
+:: Usage: call :setup-java "%projectpath%\project.txt"
+:: Depends on: variableslist, task2cmd
+  @call :funcbegin %0 "'%~1'"
+  if defined detectjava call :javahometest
+  if defined nojava set fatal=on & goto :eof
+  if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
+  call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt setup
+  copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
+  if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
+  if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
+  @rem if defined info2 echo Info: Java:saxon parse project.txt
+  call xslt3 -xsl:"scripts\variable2xslt-3.sef.json" -s:blank.xml  -o:"%scripts%\project.xslt" 
+  rem call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%  USERPROFILE=%USERPROFILE%
+  if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
+  if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
+  if exist "%scripts%\project.xslt" if defined info2 echo Setup: project.xslt from: project.txt
+  @rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
+  set scripts=%projectpath%\scripts
+  if not exist "%scripts%\inc-lookup.xslt" copy "scripts\inc-lookup.xslt" "%scripts%\inc-lookup.xslt"
+  if not exist "%scripts%\inc-file2uri.xslt" copy "scripts\inc-file2uri.xslt" "%scripts%\inc-file2uri.xslt"
+  if not exist "%scripts%\inc-copy-anything.xslt" copy "scripts\inc-copy-anything.xslt" "%scripts%\inc-copy-anything.xslt"
+  call "%projectpath%\tmp\project.cmd"
+  if defined model call :loopfiles "%model%\*.*" :modelcheck "%model%"
+  @call :funcend %0
+goto :eof
+
+:setup-rexx
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
+  @rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
+
 goto :eof
 
 :unicodecount
 :: Description: Count unicode characters in file
 :: Usage: t=:unicodecount "infile" "outfile"
-:: Depends on: External program UnicodeCCount.exe from https://scripts.sil.org/cms/scripts/page.php?item_id=UnicodeCharacterCount&preview_mode=1
+:: Depends on: External program UnicodeCCount.exe from https://scripts.sil.org/cms/scripts/page.php?item_id=UnicodeCharacterCount
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   call :infile "%~1" %0
   call :outfile "%~2" "%projectpath%\tmp\%group%-%count%-unicodecount.txt"
@@ -1478,7 +1513,7 @@ goto :eof
 
 :uniqcount
 :: Description: Create a sorted ist that is then reduced to a Uniq list
-:: Usage: t=:sortuniq infile outfile
+:: Usage: t=:uniqcount infile outfile
 :: Depends on: External program C:\Windows\System32\sort.exe found in Windows
 :: Depends on: External program uniq.exe from http://unixutils.sourceforge.net/
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
@@ -1487,8 +1522,12 @@ goto :eof
   set nocount=%~3
   set countuniq=-c
   if defined nocount set countuniq=
+  if defined info2 echo.
+  if defined info2 echo C:\Windows\System32\sort.exe "%infile%" /O "%projectpath%\tmp\tmp1.txt"
   call C:\Windows\System32\sort.exe "%infile%" /O "%projectpath%\tmp\tmp1.txt"
-  call uniq %countuniq% "%projectpath%\tmp\tmp1.txt" "%outfile%"
+  if defined info2 echo.
+  if defined info2 echo %uniq% %countuniq% "%projectpath%\tmp\tmp1.txt" "%outfile%"
+  call %uniq% %countuniq% "%projectpath%\tmp\tmp1.txt" "%outfile%"
   @call :funcendtest %0
 goto :eof
 
@@ -1551,6 +1590,7 @@ goto :eof
 goto :eof
 
 :sub
+:: Depreciated:
 :: Description: Starts a sub loop, this is similar to taskgroup
 :: Usage: call :sub "subname" ['param1' ['param2' ['param3' ['param4']]]]
 :: Depends on: appendnumbparam and when unit testing: unittestaccumulate
@@ -1605,6 +1645,61 @@ goto :eof
   set utreturn= %group%
   if defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :unittestaccumulate %group%%%c
   @call :funcend %0 %~1
+goto :eof
+
+
+:task2cmd
+:: Description: Converts sections in project.txt to x.xrun for later use
+:: Usage: call :task2cmd list
+:: Depends on: :task2cmdset
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  set list=%~1
+  @if defined info2 echo Setup: Include cmd tasks from: %~nx1 
+  if exist "%cd%\scripts\a.xrun" del /q "%cd%\scripts\*.xrun"
+  set xrunfile=%cd%\scripts\variables.xrun
+  rem set utreturn=%list%
+  FOR /F "eol=] delims=#" %%q IN (%list%) DO (
+    set line=%%q
+    call :task2cmdset
+  )
+  @call :funcend %0
+goto :eof
+
+:task2cmdset
+:: Description: Creates x.xrun file for each section
+:: Usage: call :variableset line sectiontoexit
+:: Depends on: :xrunstart
+  @call :funcbegin %0 
+  if "%line:~0,1%" == "[" (
+    set section=%line:~1,-1%
+    set xrunfile=%cd%\scripts\%line:~1,-1%.xrun
+    call :xrunstart "%cd%\scripts\%line:~1,-1%.xrun"
+    rem echo rem auto generated file ^> %xrunfile%  & echo header copied to: %xrunfile%
+  ) else (
+  if "%line:~0,2%" == "t=" (
+    echo call %line:~2% >> %xrunfile%
+    if defined info3 echo call %line:~2% ^>^> %xrunfile%
+    if defined info3 echo line copied: %line:~2%
+    if defined info3 echo   copied to: %xrunfile%
+    ) else (
+    if "%section%" == "variables" (
+        if "%line:~0,1%" neq "#" set %line%
+    )
+    if "%section%" == "setup" (
+      if "%line:~0,1%" neq "#" set %line%
+    )
+    if "%section%" == "tools" (
+      if "%line:~0,1%" neq "#" set %line%
+    )
+    )
+  )  
+  rem set utreturn=%utreturn%, %line%
+  @call :funcend %0
+goto :eof
+
+:xrunstart
+ echo rem auto generated file from project.txt > %~1  
+ if defined info3 echo header copied to: %~1
 goto :eof
 
 :taskwritexrun
@@ -1833,7 +1928,7 @@ goto :eof
 
 :variableslist
 :: Description: Handles variables list supplied in a file.
-:: Usage: call :variableslist list varsetalt
+:: Usage: call :variableslist list sectiontoexit
 :: Depends on: :variableset
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set list=%~1
@@ -1842,6 +1937,32 @@ goto :eof
   set utreturn=%list%
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :variableset "%%q" %sectiontoexit%
   set sectionexit=
+  @call :funcend %0
+goto :eof
+
+:task2cmd
+:: Description: Converts sections in project.txt to x.xrun for later use
+:: Usage: call :task2cmd list
+:: Depends on: :settask2cmd
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  set list=%~1
+  set sectiontoexit=%~2
+  @if defined info2 echo Setup: Include cmd variables from: %~nx1 
+  set utreturn=%list%
+  FOR /F "eol=] delims=`" %%q IN (%list%) DO call :task2cmdset "%%q" %sectiontoexit%
+  set sectionexit=
+  @call :funcend %0
+goto :eof
+
+:task2cmdset
+:: Description: Creates x.xrun file for each section
+:: Usage: call :variableset line sectiontoexit
+  @call :funcbegin %0 "'%~1'"
+  if defined sectionexit @call :funcend %0  & goto :eof
+  set line=%~1
+  if "%line:~0,1%" == "[" set xrunfile=scripts\%line:~1%.xrun
+  if "%line:~0,1%" == "t" echo call %line:~2% > %xrunfile%
+  set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
 
@@ -1872,6 +1993,81 @@ goto :eof
 :: Description: Runs Java with saxon to process XSLT transformations.
 :: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
 :: Depends on: inccount, infile, outfile, fatal, funcend
+:: External program1: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: External program2: Node-JS   https://nodejs.org/en/
+:: Node application: XSLT3 https://www.saxonica.com/download/javascript.xml
+:: Required variables: java saxon9
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  call :inccount
+  if defined scripts set script=%scripts%\%~1
+  if not defined scripts set script=scripts\%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
+  rem echo on
+  set params=%~4
+  if defined suppressXsltNamespace set suppressXsltNamespaceCheck=--suppressXsltNamespaceCheck:on
+  if not defined xslt set xslt=xslt2
+  if not exist "%script%" call :scriptfind "%script%" %0
+  if defined missinginput call :fatal %0 "infile not found!"
+  if defined params set params=%params:'="%
+  if defined fatal goto :eof
+  @if defined info2 echo.
+  if "%xslt%" == "xslt1" (
+    @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
+    call "%xml%" tr "%script%" "%infile%" > "%outfile%" 
+  )  
+  if "%xslt%" == "xslt1-ms" (
+    @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
+    call "%msxsl%" "%infile%" "%script%" -o "%outfile%" 
+  ) 
+  if "%xslt%" == "xslt3" (
+    @if defined info2 echo xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
+    call :xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
+  ) 
+  if "%xslt%" == "xslt2" (
+    @if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
+    %java% -Xmx1024m  %suppressXsltNamespaceCheck% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%  
+  )
+  set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  rem echo off
+  @call :funcendtest %0
+goto :eof
+
+:xslt3
+:: Description: Runs Java with saxon-js to process XSLT transformations.
+:: Usage: call :xslt3 script.xslt [input.xml [output.xml [parameters]]]
+:: Depends on: inccount, infile, outfile, fatal, funcend
+:: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+:: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
+:: Required variables: java saxon9
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  call :inccount
+  if defined scripts set script=%scripts%\%~1
+  if not defined scripts set script=scripts\%~1
+  call :infile "%~2" %0
+  call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
+  set params=%~4
+  rem if not exist "%script%" call :fatal %0 "missing script: %script%"
+  if not exist "%script%" call :scriptfind "%script%" %0
+  if defined missinginput call :fatal %0 "infile not found!"
+  if defined params set params=%params:'="%
+  rem if defined params set params=%params:::==%
+    )
+  if defined fatal goto :eof
+  @if defined info2 echo.
+  @if defined info2 echo xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
+  call xslt3 -o:"%outfile%" -s:"%infile%" -xsl:"%script%" %params%
+  set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @call :funcendtest %0
+goto :eof
+
+:xsltnons
+:: Description: Runs Java with saxon to process XSLT transformations.
+:: Usage: call :xslt script.xslt [input.xml [output.xml [parameters]]]
+:: Depends on: inccount, infile, outfile, fatal, funcend
 :: External program: java.exe https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
 :: Java application: saxon9he.jar  https://sourceforge.net/projects/saxon/
 :: Required variables: java saxon9
@@ -1892,7 +2088,7 @@ goto :eof
   if defined fatal goto :eof
   @if defined info2 echo.
   @if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
-  %java% -Xmx1024m -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
+  %java% -Xmx1024m --suppressXsltNamespaceCheck:on -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
   set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
 goto :eof
@@ -1979,4 +2175,50 @@ goto :eof
 goto :eof
 
 
+
+:setup-unused
+  @rem call :variableslist "%projectpath%\project.txt" a
+  @set utreturn=
+  @rem for %%k in (%taskgroup%) do set t%%kcount=%defaulttaskcount% & set utreturn=%utreturn% %%k
+  @rem set maxsubcount=%defaulttaskcount%
+  @rem if not exist "%ProgramFiles%\java" call :fatal %0 "Is java installed?"  & goto :eof
+  @rem call :javahometest
+  if defined nojava set fatal=on & goto :eof
+  if "%needsaxon%" == "true" if not exist "%saxon%" call :fatal %0 "Saxon9he.jar not found." "This program will exit now!"  & goto :eof
+  call :ini2xslt "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" iniparse4xslt setup
+  @rem if exist "%cd%\scripts\xrun.xslt" del "%cd%\scripts\xrun.xslt"
+  @rem call :rexxini "%cd%\setup\xrun.ini" "%cd%\scripts\xrun.xslt" tools writexslt
+  copy /y "scripts\xrun.xslt" "%projectpath%\scripts" >> log.txt
+  @rem create ?.xrun with batch
+  @rem  echo on 
+  @rem call :tasks2xrun "%projectpath%\project.txt" %groupin% taskwritexrun
+  @rem  echo off 
+  @rem call "%ccw32%" -u -b -q -n -t "scripts\ini2xslt2.cct" -o "scripts\setup.xslt" "setup\xrun.ini"
+  if not exist "%cd%\scripts\xrun.xslt" call :fatal %0 "xrun.xslt not created" & goto :eof
+  if exist "%scripts%\project.xslt" del "%scripts%\project.xslt"
+  @rem if defined info2 echo Info: Java:saxon parse project.txt
+  call %java% -jar "%saxon%" -o:"%scripts%\project.xslt" "blank.xml" "scripts\variable2xslt-3.xslt" projectpath="%projectpath%" xrunnerpath="%cd%" unittest=%unittest% xsltoff=%xsltoff%  USERPROFILE=%USERPROFILE%
+  @rem if exist "%projectpath%\scripts\project.xslt" del "%projectpath%\scripts\project.xslt"
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\scripts\project.xslt" variables writexslt
+  @rem call :rexxini "%projectpath%\project.txt" "%cd%\scripts\%groupin%.xrun" %groupin% writecmdtasks
+  @rem call :rexxini "%projectpath%\project.txt" "%projectpath%\tmp\project.cmd" variables writecmdvar
+  if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
+  if not exist "%scripts%\project.xslt" call :fatal %0 "project.xslt not created" & goto :eof
+  @rem call :xslt variable2xslt-2.xslt blank.xml %scripts%\project.xslt "projectpath='%projectpath%' 'unittest=%unittest%'"
+  @rem the following sets the default script path but it can be overridden by a scripts= in the project.txt
+  set scripts=%projectpath%\scripts
+  if not exist "%scripts%\inc-lookup.xslt" copy "scripts\inc-lookup.xslt" "%scripts%\inc-lookup.xslt"
+  if not exist "%scripts%\inc-file2uri.xslt" copy "scripts\inc-file2uri.xslt" "%scripts%\inc-file2uri.xslt"
+  if not exist "%scripts%\inc-copy-anything.xslt" copy "scripts\inc-copy-anything.xslt" "%scripts%\inc-copy-anything.xslt"
+  call "%projectpath%\tmp\project.cmd"
+  if defined model call :loopfiles "%model%\*.*" :modelcheck "%model%"
+  if exist "%scripts%\project.xslt" if defined info2 echo Setup: project.xslt from: project.txt
+  
+  
+  call :setinfolevel %infolevel%
+  @if defined info1 echo Setup: complete
+  set /A count=0
+  set utreturn=%scripts%
+  @call :funcend %0
+goto :eof
 
