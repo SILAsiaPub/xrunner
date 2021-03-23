@@ -53,6 +53,7 @@ goto :eof
   if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set text=%~1
+  set text=%text:'="%
   set outfile=%~2
   echo %text% >> "%outfile%"
   @call :funcend %0
@@ -93,7 +94,8 @@ goto :eof
   call :inccount %count%
   set script=%~1
   if not defined script call :fatal %0 "CCT script not supplied!" & goto :eof
-  if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!  %scripts%\%script%" & goto :eof
+  rem if not exist "%scripts%\%script%" call :fatal %0 "CCT script not found!  %scripts%\%script%" & goto :eof
+  if not exist "%scripts%\%script%" call :scriptfind "%script%" %0
   call :infile "%~2" %0
   if defined missinginput  call :fatal %0 "infile not found!" & goto :eof
   set cctparam=-u -b -q -n
@@ -450,9 +452,10 @@ goto :eof
   set message2=%~3
   rem color 06 
   set pauseatend=on
-  @if defined info2 echo %fatal% In %func% %group%%reset% 
-  echo %fatal% Task %count% %message% %reset%
-  if defined message2 echo %fatal% Task %count% %message2%%reset%
+  @if defined info2 echo %redbg%In %func% %group%%reset% 
+  echo %redbg%Fatal error: Task %count% %message% %reset%
+  if defined message2 echo %redbg%Task %count% %message2%%reset%
+  pause
   set utreturn=%message%
   set fatal=on
 goto :eof
@@ -1801,7 +1804,7 @@ goto :eof
 
 :tidy
 :: Description: Convert HTML to XHTML
-:: Usage: call :tidy ["infile"] ["outfile"] 
+:: Usage: call :tidy ["infile"] ["outfile"] [outspec(default=asxml)] [encoding(default=utf8)]
 :: Depends on: infile, outfile, inccount, funcend
 :: External program: tidy.exe http://tidy.sourceforge.net/
 :: Required variables: tidy
@@ -1811,7 +1814,7 @@ goto :eof
   call :inccount
   set outspec=%~3
   set encoding=%~4
-  if not defined outspec set outspec=-asxhtml
+  if not defined outspec set outspec=-asxml
   if not defined encoding set encoding=-utf8
   set curcommand="%tidy%" %outspec% %encoding% -q -o "%outfile%" "%infile%"
   if defined info2 echo %curcommand%

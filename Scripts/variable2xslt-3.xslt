@@ -9,7 +9,7 @@
     # Copyright:	(c) 2018 SIL International
     # Licence:	<MIT>
     ################################################################-->
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:f="myfunctions">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:f="myfunctions">
     <xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" indent="yes"/>
     <xsl:output method="text" encoding="utf-8" name="cmd"/>
     <xsl:include href="inc-file2uri.xslt"/>
@@ -51,6 +51,7 @@
                 <xsl:text>2.0</xsl:text>
             </xsl:attribute>
             <xsl:namespace name="f" select="'myfunctions'"/>
+            <xsl:namespace name="xs" select="'http://www.w3.org/2001/XMLSchema'"/>
             <xsl:attribute name="exclude-result-prefixes">
                 <xsl:text>f</xsl:text>
             </xsl:attribute>
@@ -327,11 +328,24 @@
             <xsl:attribute name="name">
                 <xsl:value-of select="$varname"/>
             </xsl:attribute>
+            <xsl:choose>
+                <xsl:when test="matches($vardata,'^\d*\.\d+$')">
+                    <xsl:attribute name="as">
+                        <xsl:text>xs:decimal</xsl:text>
+                    </xsl:attribute>
+                </xsl:when>
+                <xsl:when test="matches($vardata,'^\d+$')">
+                    <xsl:attribute name="as">
+                        <xsl:text>xs:decimal</xsl:text>
+                    </xsl:attribute>
+                </xsl:when>
+                <xsl:otherwise/>
+            </xsl:choose>
             <xsl:attribute name="select">
                 <xsl:if test="not($iscommand = $true)">
                     <xsl:text>'</xsl:text>
                 </xsl:if>
-                <xsl:value-of select="$vardata"/>
+                <xsl:value-of select="if (matches($vardata,concat('^',$sq,'\d+',$sq,'$'))) then replace($vardata,'^.(.+).$', '$1') else $vardata"/>
                 <xsl:if test="not($iscommand = $true)">
                     <xsl:text>'</xsl:text>
                 </xsl:if>
@@ -355,6 +369,18 @@
         <xsl:variable name="varnewname" select="replace($varname,'^(.+)_[^_]+$','$1')"/>
         <!-- delimited list -->
         <xsl:choose>
+            <xsl:when test="matches($varname,'_decimal$')">
+                <xsl:element name="xsl:variable">
+                    <xsl:attribute name="name">
+                        <xsl:value-of select="replace($varname,'_file-list','')"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="select">
+                        <xsl:text>f:file2lines($</xsl:text>
+                        <xsl:value-of select="$varname"/>
+                        <xsl:text>)</xsl:text>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:when>
             <xsl:when test="matches($varname,'_file-list$')">
                 <!-- adds a tokenized list from a file. Good for when the list is too long for batch line -->
                 <xsl:element name="xsl:variable">
@@ -365,6 +391,15 @@
                         <xsl:text>f:file2lines($</xsl:text>
                         <xsl:value-of select="$varname"/>
                         <xsl:text>)</xsl:text>
+                    </xsl:attribute>
+                </xsl:element>
+                <!-- Write key var for any _file-list -->
+                <xsl:element name="xsl:variable">
+                    <xsl:attribute name="name">
+                        <xsl:value-of select="concat($varnewname,'-key')"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="select">
+                        <xsl:value-of select="concat('tokenize($',$varname,',',$sq,'=[^',$listdelim,']*[',$listdelim,']?',$sq,')')"/>
                     </xsl:attribute>
                 </xsl:element>
             </xsl:when>
@@ -615,6 +650,12 @@
     <xsl:function name="f:batvarcheck">
         <xsl:param name="string"/>
         <xsl:choose>
+            <xsl:when test="matches($string,'^\d+$')">
+                <xsl:text>true</xsl:text>
+            </xsl:when>
+            <xsl:when test="matches($string,'^\d?\.\d+$')">
+                <xsl:text>true</xsl:text>
+            </xsl:when>
             <xsl:when test="matches($string,'%[\w\d\-_]+?%')">
                 <xsl:text>true</xsl:text>
             </xsl:when>
