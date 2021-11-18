@@ -41,7 +41,7 @@ goto :eof
   if not exist "%~2" copy nul "%~2"
   if not exist "%~1" echo Warning: File to append does not exist. File: %~1  & pause & @call :funcend %0 & goto :eof
   if exist "%~1" type "%~1" >> "%~2"
-  set utreturn=%~1, %~2
+  @if defined unittest set utreturn=%~1, %~2
   rem echo off
   @call :funcend %0
 goto :eof
@@ -71,6 +71,16 @@ goto :eof
   if not defined outvar echo Error: no var name defined at par3.& echo %funcendtext% %0  & goto :eof
   if defined %parpre%%numb% set appendparam=%appendparam% "!%parpre%%newnumb%!"
   set %outvar%=%appendparam%
+goto :eof
+
+:calc
+:: Description: Calculate an number and return in a variable.
+:: Usage: call :calc varname numbcalcstring
+  @call :funcbegin %0 "'%~1' '%~2'"
+  set /A %~1=%~2
+  echo !%~1!
+  Pause
+  @call :funcend %0
 goto :eof
 
 :calcnumbparam
@@ -109,7 +119,7 @@ goto :eof
   pushd "%scripts%"
   call %curcommand%
   popd
-  set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
+  @if defined unittest set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
   @call :funcendtest %0
 goto :eof
 
@@ -138,7 +148,7 @@ goto :eof
   pushd "%scripts%"
   call %curcommand%
   popd
-  set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
+  @if defined unittest set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
   @call :funcendtest %0
 goto :eof
 
@@ -155,7 +165,7 @@ goto :eof
   if exist "%checkpath%" if defined info3 echo Info: found path %checkpath%
   if not exist "%checkpath%" if defined info3 echo Info: creating path %checkpath%
   if not exist "%checkpath%" mkdir "%checkpath%"
-  set utreturn=%checkpath%
+  @if defined unittest set utreturn=%checkpath%
   @call :funcend %0
 goto :eof
 
@@ -184,11 +194,11 @@ goto :eof
     if not exist "%commandpath%" mkdir "%commandpath%"
     )
   if defined commandpath pushd "%commandpath%"
-  if defined commandpath echo current path: %cd%
+  if defined commandpath if defined info3 echo current path: %cd%
   @if defined info2 echo %curcommand%
   call %curcommand%
   if defined commandpath popd
-  set utreturn=%curcommand%, %commandpath%, %outfile%
+  @if defined unittest set utreturn=%curcommand%, %commandpath%, %outfile%
   @if defined outfile @call :funcendtest %0
 goto :eof
 
@@ -220,7 +230,7 @@ goto :eof
     call %curcommand% >> "%outfile%"
   )
   if defined commandpath popd
-  set utreturn=%command%, %outfile%, %projectpath%\xml\%group%-%count%-%~1-command2file.xml
+  @if defined unittest set utreturn=%command%, %outfile%, %projectpath%\xml\%group%-%count%-%~1-command2file.xml
   @call :funcendtest %0 
 goto :eof
 
@@ -240,7 +250,7 @@ goto :eof
   if not defined commandline goto :eof
   set commandline=%commandline:'="%
   if defined comment echo %comment%
-  set utreturn=%commandline%, %varname%
+  @if defined unittest set utreturn=%commandline%, %varname%
   FOR /F "delims=#" %%s IN ('%commandline%') DO set %varname%=%%s & set utreturn=%utreturn%, %%s
   set commandline=
   set comment=
@@ -359,7 +369,7 @@ goto :eof
 :: Usage: call :dec varname
   @call :funcbegin %0 "'%~1'"
   set /A %~1-=1
-  set utreturn=!%~1!
+  @if defined unittest set utreturn=!%~1!
   @call :funcend %0
 goto :eof
 
@@ -394,7 +404,7 @@ goto :eof
   set drive=%~d1
   set drivelet=%drive:~0,1%
   set drivepath=%utdp:~0,-1%
-  set utreturn=%drivepath%
+  @if defined unittest set utreturn=%drivepath%
   @call :funcend %0
 goto :eof
 
@@ -426,21 +436,20 @@ call :infile "%testfile%"
 set nameext=%~nx1
 FOR /F "usebackq tokens=1-2" %%A IN (`%encodingchecker% --mime-encoding "%infile%"`) DO set fencoding=%%B
 if defined validateagainst (
-    if "%fencoding%" == "%validateagainst%"  (
-        echo %green% Encoding is: %fencoding% for file %nameext%. %reset%
-      ) else if "%fencoding%" == "us-ascii" (
-        echo %magentabg% Encoding is: %fencoding% not %validateagainst% but is usable. %reset%
+    if "%fencoding%" == "%validateagainst%"  ( echo %green%%nameext% encoding is: %fencoding% %reset% 
+    ) else (
+    if "%fencoding%" == "us-ascii" ( echo %green%%nameext% encoding is: %fencoding% -- OK. %reset% &  goto :eof  
       ) else (
         echo %redbg% File %nameext% encoding is %fencoding%! %reset% 
         echo %redbg% Encoding is: %fencoding%  But it was expected to be: %validateagainst%. %reset%
         set errorsuspendprocessing=on
-        pause
+      )
       )
 ) else  (              
     echo Encoding is: %magentabg% %fencoding% %reset% for file %nameext%.
     pause
 ) 
-  set utreturn=%testfile%, %validateagainst%, %fencoding%, %nameext%
+  @if defined unittest set utreturn=%testfile%, %validateagainst%, %fencoding%, %nameext%
   @call :funcend %0
 goto :eof
 
@@ -456,7 +465,7 @@ goto :eof
   echo %redbg%Fatal error: Task %count% %message% %reset%
   if defined message2 echo %redbg%Task %count% %message2%%reset%
   pause
-  set utreturn=%message%
+  @if defined unittest set utreturn=%message%
   set fatal=on
 goto :eof
 
@@ -481,6 +490,7 @@ goto :eof
 :funcendtest
 :: Description: Used with func that output files. Like XSLT, cct, command2file
 :: Usage: call :funcend %0
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
   set functest=%~1
   set alttext=%~2
   if not defined alttext set alttext=Output:
@@ -493,8 +503,8 @@ goto :eof
   @if not defined info4 set utret5=
   @if defined info4 set utret5=%funcendtext% %functest%
   @if defined outfile if not exist "%outfile%" set skiptasks=on  & if not defined unittest pause
-  set utreturn= %functest%, %info1%, %info4%, %utret3%, %utret4%, %utret5%
-  @call :funcend %functest%
+  @if defined unittest set utreturn= %functest%, %info1%, %info4%, %utret3%, %utret4%, %utret5%
+  @call :funcend  %0
 @goto :eof
 
 :funcend
@@ -516,6 +526,8 @@ goto :eof
   set par1=%~1
   set par2=%~2
   set par3=%~3
+  set par4=%~4
+  if not defined par4 set par4=CP1252
   if not defined par3 call :infile "%par1%"
   if not defined par3 call :outfile "%par2%" "%projectpath%\tmp\iconv-%~nx1"
   if defined par3 set infile=%par2%\%par1%
@@ -523,11 +535,11 @@ goto :eof
   if not exist "%infile%" echo Error: missing infile = %infile% 
   if not exist "%infile%" if defined info4 echo %funcendtext% %0 
   if not exist "%infile%" goto :eof
-  set command=%iconv% -f CP1252 -t UTF-8 "%infile%"
+  set command=%iconv% -f %par4% -t UTF-8 "%infile%"
   @if defined info2 echo.
-  @if defined info2 echo call %command%
+  @if defined info2 echo call %command% ^> "%outfile%"
   call %command% > "%outfile%"
-  set utreturn=%par1%, %par2%, %par3%, %projectpath%\tmp\iconv-%~nx1, 
+  @if defined unittest set utreturn=%par1%, %par2%, %par3%, %projectpath%\tmp\iconv-%~nx1, 
   @call :funcendtest %0
 goto :eof
 
@@ -536,18 +548,18 @@ goto :eof
   set t1=%~1
   set t2=%~2
   set action=%~3
-  set altaction=%~4
-  set actpar1=%~5
-  set actpar2=%~6
-  set actpar3=%~7
-  set actpar4=%~8
+  set actpar1=%~4
+  set actpar2=%~5
+  set actpar3=%~6
+  set actpar4=%~7
+  set actpar5=%~8
+  set actpar6=%~9
   set firstact=%action:~0,1%
-  set firstaltact=%altaction:~0,1%
   if "%t1%" == "%t2%" (
     @if defined info3 echo "%t1%" ==  "%t2%" are equal
     if ~%firstact% neq ~: (
       rem @if defined info3 echo call :taskgroup %action%  "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
-      call :taskgroup %action% ""%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
+      call :taskgroup %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
     ) else (
       rem @if defined info3 echo call %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
       call %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
@@ -594,14 +606,16 @@ goto :eof
   set param5=%~5
   set param6=%~6
   call :inccount
-  if not defined testfile echoError:  missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
+  if not defined testfile echo Error:  missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
   if not defined param2 echo Error: missing action param2& echo %funcendtext% %0 error2 & goto :eof
+  set appendparam=
+  set numbparam=
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
   for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
   if not exist "%testfile%" if defined info3 echo Info: testfile %~nx1 does not exist. No action %param2% taken
   if exist "%testfile%" if defined info3 echo %param2% %param3% %param4% %param5%
   if exist "%testfile%" %param2% %param3% %param4% %param5% 
-  set utreturn=%testfile%, %param2%, %param3%, %param4%, %param5%, %param6%
+  @if defined unittest set utreturn=%testfile%, %param2%, %param3%, %param4%, %param5%, %param6%
   @call :funcend %0
 goto :eof
 
@@ -610,7 +624,7 @@ goto :eof
 :: Usage: call :ifnotexist testfile action 
 :: Depends on: inccount
   if defined fatal goto :eof
-  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
   set testfile=%~1
   set param2=%~2
   set param3=%~3
@@ -621,11 +635,15 @@ goto :eof
   rem echo on
   if not defined testfile echo missing testfile parameter & echo %funcendtext% %0  & goto :eof
   if not defined param2 echo missing action param2 parameter & echo %funcendtext% %0  & goto :eof
-  for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
+  set appendparam=
+  set numbparamine=
+  set numbparam=
+  for /L %%v in (3,1,9) Do call :appendnumbparam numbparamine param %%v
   set action=%param2:'="%
-  if not exist "%testfile%" %param2% %numbparam%
+  @if defined info3 echo if not exist "%testfile%" %param2% %numbparamine%
+  if not exist "%testfile%" %param2% %numbparamine%
   rem echo off
-  set utreturn=%testfile%, %action%, %param3%, %param4%, %param5%, %param6%
+  @if defined unittest set utreturn=%testfile%, %action%, %param3%, %param4%, %param5%, %param6%
   @call :funcend %0
 
 goto :eof
@@ -635,7 +653,7 @@ goto :eof
 :: Usage: call :inc varname
   @call :funcbegin %0 "'%~1'"
   set /A %~1+=1
-  set utreturn=!%~1!
+  @if defined unittest set utreturn=!%~1!
   @call :funcend %0 !%~1!
 goto :eof
 
@@ -654,7 +672,7 @@ goto :eof
   set /A count=%count%+1
   set writecount=%count%
   if %count% lss 10 set writecount=%space%%count%
-  set utreturn=%count%, %writecoun%
+  @if defined unittest set utreturn=%count%, %writecoun%
   @call :funcend %0
 goto :eof
 
@@ -669,7 +687,7 @@ goto :eof
   @if exist "%infile%" set missinginput=
   @if not exist "%infile%" call :fatal %0 ":infile %~nx1 not found for %callingfunc%"
   @if defined info4 echo Info: infile = %infile%
-  set utreturn=%infile%
+  @if defined unittest set utreturn=%infile%
   @call :funcend %0
 goto :eof
 
@@ -717,7 +735,7 @@ goto :eof
   if not defined sectionstart @call :funcend %0
   if not defined sectionstart goto :eof
   if defined sectionstart set %line%
-  @set utreturn=%utreturn%, %line%
+  @if defined unittest set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
 
@@ -765,7 +783,7 @@ goto :eof
   rem FOR /F "eol=] delims=`" %%q IN (%list%) DO set utreturn=!utreturn!, "%%q"
   set sectionstart=
   @if defined info2 echo Setup: tasks created from: %~nx1
-  set utreturn=%list%, %tasklinewrite%, !utreturn!
+  @if defined unittest set utreturn=%list%, %tasklinewrite%, !utreturn!
   @call :funcend %0
 goto :eof
 
@@ -841,7 +859,7 @@ goto :eof
   if defined lastfound goto :eof
   set last=!%~1%~2!
   if defined last set lastfound=on
-  set utreturn=%last%, %~1, %~2
+  @if defined unittest set utreturn=%last%, %~1, %~2
 goto :eof
 
 :loopfolders
@@ -859,6 +877,8 @@ goto :eof
   set par7=%~7
   set par8=%~8
   set par9=%~9
+  set appendparam=
+  set numbparam=
   if not defined grouporfunc echo Missing function or task-group parameter & goto :eof
   if not defined basedir echo Missing basedir parameter & goto :eof
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
@@ -911,7 +931,7 @@ goto :eof
   )  
     )  
   )  
-  set utreturn= %filespec%, %sub%, %numbparam%, %last%
+  @if defined unittest set utreturn= %filespec%, %sub%, %numbparam%, %last%
   if defined unittest FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO call :unittestaccumulate "%%s" %sub% %numbparam%
   @call :funcend %0
   @if defined loopfilesecho echo off
@@ -955,7 +975,7 @@ goto :eof
   )  
     )  
   )  
-  set utreturn= %filespec%, %sub%, %numbparam%, %last%
+  @if defined unittest set utreturn= %filespec%, %sub%, %numbparam%, %last%
   if defined unittest FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n %filespec%') DO call :unittestaccumulate "%%s" %sub% %numbparam%
   @call :funcend %0
 goto :eof
@@ -979,7 +999,7 @@ goto :eof
   if not defined grouporfunc echo %funcendtext% %0 
   if not defined grouporfunc goto :eof
   if not defined start echo Missing start parameter
-  if not defined start echo %funcendtext% %0 
+  if not defined start if defined info4 echo %funcendtext% %0 
   if not defined start goto :eof
   if not defined end echo Missing end parameter
   if not defined end echo %funcendtext% %0 
@@ -1007,14 +1027,14 @@ goto :eof
   set par7=%~7
   set par8=%~8
   set par9=%~9
+  set numbparam=
+  set appendparam=
   if not defined grouporfunc echo Missing action parameter
   if not defined grouporfunc echo %funcendtext% %0 
   if not defined grouporfunc goto :eof
   if not defined string echo Missing string parameter
-  if not defined string echo %funcendtext% %0 
+  if not defined string if defined info4 echo %funcendtext% %0 
   if not defined string goto :eof
-  set numbparam=
-  set appendparam=
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v 
   for /L %%v in (3,1,9) Do call :last par %%v
   if defined info3 set numbparam
@@ -1033,13 +1053,26 @@ goto :eof
   call :setup
   if defined fatal goto :eof
   if defined group set taskgroup=%group%
-  set utreturn=-,%group%,
+  @if defined unittest set utreturn=-,%group%,
   if not defined unittest for %%g in (%taskgroup%) do call :taskgroup %tasgroupprefix%%%g
   @if defined info2 echo Info: xrun finished!
   if defined espeak if defined info2 call "%espeak%" "x run finished"
   if defined unittest for %%g in (%taskgroup%) do call :unittestaccumulate t%%g
   @call :funcend :main
   rem if defined pauseatend call :exit-prompt
+  @if %infolevel% == 4 echo on
+  set esec=%time:~6,2%
+  set emin=%time:~3,2%
+  set ehr=%time:~0,2%
+  if "%esec:~0,1%" == "0" set esec=%esec:~1,1%
+  if "%emin:~0,1%" == "0" set esec=%emin:~1,1%
+  if "%ehr:~0,1%" == "0" set ehr=%ehr:~1,1%
+  set /a ehrseconds=%ehr% * 60 * 60
+  set /a endseconds=(%emin% * 60) + %esec% + %ehrseconds%
+  rem echo esec=%esec% emin=%emin% endseconds=%endseconds%
+  set /a elapsed=%endseconds%-%beginseconds%
+  @if %infolevel% == 4 echo off
+  @echo Completed in %elapsed% seconds at %time:~0,8%
   if defined pauseatend pause
 goto :eof
 
@@ -1051,7 +1084,7 @@ goto :eof
   set v1=%~3
   set v2=%~4
   set %vname%=!%pname%%v1%!!%pname%%v2%!
-  set utreturn=!%vname%!
+  @if defined unittest set utreturn=!%vname%!
   @call :funcend %0
 goto :eof
 
@@ -1106,7 +1139,7 @@ goto :eof
   if exist "%outfile%.prev" del "%outfile%.prev"
   rem if outfile exists then rename to file.ext.prev; this works with wild cards too now.
   if exist "%outfile%" ren "%outfile%" "%outnx%.prev"
-  set utreturn=%outfile%, %defaultoutfile%, %nocheck%, %outpath%, %outnx%
+  @if defined unittest set utreturn=%outfile%, %defaultoutfile%, %nocheck%, %outpath%, %outnx%
   if defined info4 set utreturn
   @if defined info4 echo.
   @if defined info4 echo Info: outfile = %outfile%
@@ -1131,7 +1164,7 @@ goto :eof
   if "%var3%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var2%" == "validate" call :validate "%outfile%"
   if "%var3%" == "validate" call :validate "%outfile%"
-  set utreturn=%infile%, %outfile%, %var2%, %var3%
+  @if defined unittest set utreturn=%infile%, %outfile%, %var2%, %var3%
   @call :funcendtest %0 Renamed:
 goto :eof
 
@@ -1182,7 +1215,7 @@ goto :eof
   pushd "%scripts%"
   call %curcommand%
   popd
-  set utreturn=%perl%, %script%, %infile%, %outfile%, %par1%
+  @if defined unittest set utreturn=%perl%, %script%, %infile%, %outfile%, %par1%
   @call :funcendtest %0
 goto :eof
 
@@ -1213,7 +1246,7 @@ goto :eof
   set curcommand=call "%prince%" %css% "%infile%" %infile2% %infile3% %infile4% %infile5% %infile6% %infile7% -o "%outfile%"
   @if defined info2 echo %curcommand%
   %curcommand%
-  set utreturn=%infile%, %outfile%, %css%, %prince%, %curcommand%
+  @if defined unittest set utreturn=%infile%, %outfile%, %css%, %prince%, %curcommand%
   @call :funcendtest %0
 goto :eof
 
@@ -1361,8 +1394,29 @@ goto :eof
   call :outfile "%~4" "%projectpath%\tmp\%group%-%count%-regex.txt"
   set options=%~5
   set curcommand=rxrepl.exe %options% --search %find% --replace %replace% -f "%infile%" -o "%outfile%"
-  echo call %curcommand%
+  @if defined info2 echo call %curcommand%
   call %curcommand%
+  @call :funcendtest %0
+goto :eof
+
+:regexren
+:: Description: Rename with regular expression
+:: Usage: call :regexren file path find replace options
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  call :inccount
+  if defined missinginput color 06& echo %funcendtext% %0  & goto :eof
+  set options=/f /r
+  set files=%~1
+  set drivepath=%~2
+  set find=%~3
+  set replace=%~4
+  set cloptions=%~5
+  if defined cloptions set options=%~5
+  set curcommand="%regexren%" "%files%" "%find%" "%replace%" %options% 
+  pushd "%drivepath%"
+  @if defined info2 echo call  %curcommand%
+  call %curcommand%
+  popd
   @call :funcendtest %0
 goto :eof
 
@@ -1394,7 +1448,7 @@ goto :eof
   set funcendtext=       ----}
   rem turn off echo for the remaining levels
   rem if  "%~1" LSS "5" echo off
-  set utreturn=%~1, %info1%, %info2%, %info4%, %info3%, %info5%, %funcstarttext%, %funcendtext%
+  @if defined unittest set utreturn=%~1, %info1%, %info2%, %info4%, %info3%, %info5%, %funcstarttext%, %funcendtext%
   @call :funcend %0
 goto :eof
 
@@ -1412,16 +1466,31 @@ goto :eof
   set magentabg=[105m
   set green=[32m
   set reset=[0m
+  if %infolevel% == 4 echo on
+  set bsec=%time:~6,2%
+  set bmin=%time:~3,2%
+  set bhr=%time:~0,2%
+  @echo Start time: %time:~0,8%
+  if "%bsec:~0,1%" == "0" set bsec=%bsec:~1,1%
+  if "%bmin:~0,1%" == "0" set bsec=%bmin:~1,1%
+  if "%bhr:~0,1%" == "0" set bhr=%bhr:~1,1%
+  set /a bhrseconds=%bhr% * 60 * 60
+  set /a beginseconds=(%bmin% * 60) + %bsec% + %bhrseconds%
+  if %infolevel% == 4 echo off
+  rem echo bsec=%bsec% bmin=%bmin% bginseconds=%beginseconds%
   rem the following line cleans up from previous runs.
   if not defined unittest if exist scripts\*.xrun del scripts\*.xrun
   set scripts=%projectpath%\scripts
   if not exist "%scripts%" md "%scripts%"
   set /A count=0
   echo.
+  set encodingchecker=C:\programs\gnuwin32\bin\file.exe
+  call :encoding "setup\xrun.ini" utf-8
+  call :encoding "%projectpath%\project.txt" utf-8
   call :variableslist "setup\xrun.ini"
   call :detectdateformat
   call :setup-%setup-type%
-  @if defined info1 echo Setup: complete
+  @if defined info0 echo Setup: complete
   set /A count=0
   rem set utreturn=%scripts%
   @call :funcend %0
@@ -1617,7 +1686,7 @@ goto :eof
   FOR /F "eol=[ delims=;" %%q IN (scripts\%sub2%.xrun) DO %%q
   rem the following 3 lines are for Unit testing.
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam sub %%v
-  set utreturn= %varin%, %subname%, %numbparam%, %taskend%, 
+  @if defined unittest set utreturn= %varin%, %subname%, %numbparam%, %taskend%, 
   if defined unittest FOR /L %%c IN (1,1,%taskend%) DO if defined %sub2%%%c call :unittestaccumulate %sub2%%%c
   @call :funcend %0 %sub2%
 goto :eof
@@ -1626,7 +1695,6 @@ goto :eof
 :: Description: Loop that triggers each task in the group.
 :: Usage: call :taskgroup group
 :: Depends on: unittestaccumulate. Can depend on any procedure in the input task group.
-@echo off
   @if defined fatal if defined info4 echo %funcendtext% %0 "%~1 '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8' '%~9'"
   @if defined fatal goto :eof
   @call :funcbegin %0 "%~1 '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8' '%~9'"
@@ -1645,7 +1713,7 @@ goto :eof
   set taskend=!%~1count!
   rem if not defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :task %group%%%c
   if not defined unittest FOR /F "eol=] delims=[" %%q IN (scripts\%group%.xrun) DO %%q "%~2" "%~3" "%~4" "%~5" "%~7" "%~8" "%~9"
-  set utreturn= %group%
+  @if defined unittest set utreturn= %group%
   if defined unittest FOR /L %%c IN (1,1,%taskend%) DO call :unittestaccumulate %group%%%c
   @call :funcend %0 %~1
 goto :eof
@@ -1718,7 +1786,7 @@ goto :eof
 
   if defined sectionstart if "%line:~0,2%" == "t=" echo call %line:~2%>> scripts\%sectionget%-test.xrun   
 
-  set utreturn=%utreturn%, %line%
+  @if defined unittest set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
 
@@ -1770,18 +1838,18 @@ goto :eof
     set expect12=%%r
     )
   for /F "tokens=1-12 delims=," %%g in ("%utreturn%") do (
-    set utreturn1=%%g
-    set utreturn2=%%h
-    set utreturn3=%%i
-    set utreturn4=%%j
-    set utreturn5=%%k
-    set utreturn6=%%l
-    set utreturn7=%%m
-    set utreturn8=%%n
-    set utreturn9=%%o
-    set utreturn10=%%p
-    set utreturn11=%%q
-    set utreturn12=%%r
+    @if defined unittest set utreturn1=%%g
+    @if defined unittest set utreturn2=%%h
+    @if defined unittest set utreturn3=%%i
+    @if defined unittest set utreturn4=%%j
+    @if defined unittest set utreturn5=%%k
+    @if defined unittest set utreturn6=%%l
+    @if defined unittest set utreturn7=%%m
+    @if defined unittest set utreturn8=%%n
+    @if defined unittest set utreturn9=%%o
+    @if defined unittest set utreturn10=%%p
+    @if defined unittest set utreturn11=%%q
+    @if defined unittest set utreturn12=%%r
     )
     call :var utreturn1 %utreturn1%
   for /L %%n in (1,1,12) Do (
@@ -1858,7 +1926,7 @@ rem goto :eof
 
 :unittestaccumulate
 :: Description: Acumulate %utreturn% variables into a coma space separated list.
-  set utreturn=%utreturn%,%~1
+  @if defined unittest set utreturn=%utreturn%,%~1
 goto :eof
 
 :v2
@@ -1868,7 +1936,7 @@ goto :eof
   set value=%~2
   if not defined vname echo Name value missing. Var not set& echo %funcendtext% %0  & goto :eof
   set %~1=%value%
-  set utreturn=%value%
+  @if defined unittest set utreturn=%value%
   @call :funcend %0
 goto :eof
 
@@ -1912,7 +1980,7 @@ goto :eof
   if not defined vname echo Name value missing. Var not set& echo %funcendtext% %0 & set utreturn=missing vname & goto :eof
   rem no longer needed call :v2 retval "%value%"
   set %vname%=%value%
-  set utreturn=%vname%, !%vname%!
+  @if defined unittest set utreturn=%vname%, !%vname%!
   @call :funcend %0
 goto :eof
 
@@ -1925,7 +1993,7 @@ goto :eof
   if "%line%" == "[%~2]" set sectionexit=on
   if "%line:~0,1%" == "[" @call :funcend %0 & goto :eof
   if "%line:~0,1%" neq "#" set %line%
-  set utreturn=%utreturn%, %line%
+  @if defined unittest set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
 
@@ -1937,7 +2005,7 @@ goto :eof
   set list=%~1
   set sectiontoexit=%~2
   @if defined info2 echo Setup: Include cmd variables from: %~nx1 
-  set utreturn=%list%
+  @if defined unittest set utreturn=%list%
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :variableset "%%q" %sectiontoexit%
   set sectionexit=
   @call :funcend %0
@@ -1951,7 +2019,7 @@ goto :eof
   set list=%~1
   set sectiontoexit=%~2
   @if defined info2 echo Setup: Include cmd variables from: %~nx1 
-  set utreturn=%list%
+  @if defined unittest set utreturn=%list%
   FOR /F "eol=] delims=`" %%q IN (%list%) DO call :task2cmdset "%%q" %sectiontoexit%
   set sectionexit=
   @call :funcend %0
@@ -1965,7 +2033,7 @@ goto :eof
   set line=%~1
   if "%line:~0,1%" == "[" set xrunfile=scripts\%line:~1%.xrun
   if "%line:~0,1%" == "t" echo call %line:~2% > %xrunfile%
-  set utreturn=%utreturn%, %line%
+  @if defined unittest set utreturn=%utreturn%, %line%
   @call :funcend %0
 goto :eof
 
@@ -2010,7 +2078,7 @@ goto :eof
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%~n1.xml" nocheck
   rem echo on
   set params=%~4
-  if defined suppressXsltNamespace set suppressXsltNamespaceCheck=--suppressXsltNamespaceCheck:on
+  if defined suppressXsltNamespace set suppressXsltNamespaceCheck=--suppressXsltNamespaceCheck on
   if not defined xslt set xslt=xslt2
   if not exist "%script%" call :scriptfind "%script%" %0
   if defined missinginput call :fatal %0 "infile not found!"
@@ -2025,15 +2093,15 @@ goto :eof
     @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
     call "%msxsl%" "%infile%" "%script%" -o "%outfile%" 
   ) 
-  if "%xslt%" == "xslt3" (
-    @if defined info2 echo xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
-    call :xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
-  ) 
   if "%xslt%" == "xslt2" (
     @if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
     %java% -Xmx1024m  %suppressXsltNamespaceCheck% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%  
   )
-  set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  if "%xslt%" == "xslt3" (
+    @if defined info2 echo xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
+    call :xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
+  ) 
+  @if defined unittest set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   rem echo off
   @call :funcendtest %0
 goto :eof
@@ -2063,7 +2131,7 @@ goto :eof
   @if defined info2 echo.
   @if defined info2 echo xslt3 -xsl:"%script%" -s:"%infile%" -o:"%outfile%" %params%
   call xslt3 -o:"%outfile%" -s:"%infile%" -xsl:"%script%" %params%
-  set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @if defined unittest set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
 goto :eof
 
@@ -2092,7 +2160,7 @@ goto :eof
   @if defined info2 echo.
   @if defined info2 echo %java% -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
   %java% -Xmx1024m --suppressXsltNamespaceCheck:on -jar "%saxon%" -o:"%outfile%" "%infile%" "%script%" %params%
-  set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @if defined unittest set utreturn=%saxon%, %script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
 goto :eof
 
@@ -2121,7 +2189,7 @@ goto :eof
   @if defined info2 echo.
   @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
   call "%xml%" tr "%script%" "%infile%" > "%outfile%" 
-  set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @if defined unittest set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
 goto :eof
 
@@ -2150,7 +2218,7 @@ goto :eof
   @if defined info2 echo.
   @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
   call "%msxsl%" "%infile%" "%script%" -o "%outfile%" 
-  set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
+  @if defined unittest set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
 goto :eof
 
@@ -2221,7 +2289,7 @@ goto :eof
   call :setinfolevel %infolevel%
   @if defined info1 echo Setup: complete
   set /A count=0
-  set utreturn=%scripts%
+  @if defined unittest set utreturn=%scripts%
   @call :funcend %0
 goto :eof
 
