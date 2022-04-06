@@ -329,10 +329,12 @@ goto :eof
 
 :date
 :: Description: Returns multiple variables with date in three formats, the year in wo formats, month and day date.
-:: Required variables: detectdateformat
+:: Depends on: detectdateformat
+:: Required variables: dateseparator
 :: Created: 2016-05-04
 rem got this from: http://www.robvanderwoude.com/datetiment.php#IDate
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  if not defined dateseparator call :detectdateformat
   FOR /F "tokens=1-4 delims=%dateseparator% " %%A IN ("%date%") DO (
       IF "%dateformat%"=="0" (
           SET fdd=%%C
@@ -428,7 +430,7 @@ goto :eof
 :: External program: file.exe http://gnuwin32.sourceforge.net/
 :: Required variables: encodingchecker
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
-if not defined encodingchecker echo Encoding not checked. & echo %funcendtext% %0 error1 &goto :eof
+rem if not defined encodingchecker echo Encoding not checked. Encoding Checker not defined. & echo %funcendtext% %0 error1 &goto :eof
 if not exist "%encodingchecker%" echo file.exe not found! %fileext% &echo Encoding not checked. & echo %funcendtext% %0 error2 & goto :eof
 set testfile=%~1
 set validateagainst=%~2
@@ -1432,6 +1434,29 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
+:scriptfind
+:: Description: Find script if it does not exist in the scritps folder
+  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
+  set sname=%~1
+  set funcname=%~2
+  rem if the script was one of several like in CCT this will skip if it exists.
+  if exist "%scripts%\%sname%" (
+    echo %sname% found!
+    @if defined info4 echo %funcendtext% %0
+    goto :eof
+    )
+  call :nameext "%sname%"
+  if defined info3 echo.
+  if defined info3 echo ????? Searching other projects for missing script: %nameext% ?????
+  if exist "%cd%\scripts\generic-pool\%nameext%" (
+    copy "%cd%\scripts\generic-pool\%nameext%" "%scripts%"
+    ) else (
+    FOR /F "" %%f IN ('dir /b /s %projecthome%\%nameext%') DO xcopy "%%f" "%scripts%" /d /y 
+    )
+  if not exist "%scripts%\%nameext%" call :fatal %funcname% "missing script: %nameext%"
+  @call :funcend %0
+goto :eof
+
 :setinfolevel
 :: Description: Used for initial setup and after xrun.ini and project.txt
 :: Usage: call :setinfolevel numb-level
@@ -1892,6 +1917,7 @@ goto :eof
 
 :time
 :: Description: Retrieve time in several shorter formats than %time% provides
+:: Optional variables: timeseparator
 :: Usage: call :time
 :: Created: 2016-05-05
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
@@ -2220,29 +2246,6 @@ goto :eof
   call "%msxsl%" "%infile%" "%script%" -o "%outfile%" 
   @if defined unittest set utreturn=%script%, %infile%, %outfile%, %group%-%count%-%~n1.xml
   @call :funcendtest %0
-goto :eof
-
-:scriptfind
-:: Description: Find script if it does not exist in the scritps folder
-  @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4'"
-  set sname=%~1
-  set funcname=%~2
-  rem if the script was one of several like in CCT this will skip if it exists.
-  if exist "%scripts%\%sname%" (
-    echo %sname% found!
-    @if defined info4 echo %funcendtext% %0
-    goto :eof
-    )
-  call :nameext "%sname%"
-  if defined info3 echo.
-  if defined info3 echo ????? Searching other projects for missing script: %nameext% ?????
-  if exist "%cd%\scripts\generic-pool\%nameext%" (
-    copy "%cd%\scripts\generic-pool\%nameext%" "%scripts%"
-    ) else (
-    FOR /F "" %%f IN ('dir /b /s %projecthome%\%nameext%') DO xcopy "%%f" "%scripts%" /d /y 
-    )
-  if not exist "%scripts%\%nameext%" call :fatal %funcname% "missing script: %nameext%"
-  @call :funcend %0
 goto :eof
 
 

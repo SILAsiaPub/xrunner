@@ -20,12 +20,12 @@
   <button class="tablinks" onclick="OpenTab('projectinfo')" id="projectinfotab">Project Info</button>
   <button class="tablinks" onclick="OpenTab('Xrunnerinfo')" id="Xrunnerinfotab">Xrunner Info</button>
   <button class="tablinks" onclick="OpenTab('Xrunfunc')" id="Xrunfunctab">Xrun func reference</button>
-  <button class="tablinks" onclick="OpenTab('expert')" id="experttab"></button>
+  <button class="tablinks" onclick="OpenTab('expert')" id="experttab">Expert</button>
 </div>
 <!-- Tab content -->
   <div id="project" class="tabcontent active"> <form>
    <textarea name="DataArea" rows="18" cols=150 readonly></textarea>
-   <input type="BUTTON" value="Edit project.txt file" onclick="call editFileExternal(projectTxt)" class="floatright halfbutton">
+   <input type="BUTTON" value="Edit project.txt file" onclick="editFileExternal(projectTxt)" class="floatright halfbutton">
    <input type="BUTTON" value="Refresh from source" onclick="reloadProject(projectTxt)" class="">
    <button onclick="call RunCmd2('start', '', ShowSelectedFolder.Value)" class="halfbutton" >Open Project folder</button>
   </form>

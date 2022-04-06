@@ -104,6 +104,9 @@
                 </xsl:attribute>
                 <xsl:text>"</xsl:text>
             </xsl:element>
+            <xsl:if test="not(unparsed-text-available(f:file2uri($projectsource)))">
+                <xsl:comment select="' Fatal error! project.txt file not loaded. XXXXXXXXXXXXXXXXXXXXXXXXXXX '"/>
+            </xsl:if>
             <xsl:for-each select="$section">
                 <xsl:variable name="sectpart" select="tokenize(.,'\]')"/>
                 <xsl:variable name="sectname" select="$sectpart[1]"/>
