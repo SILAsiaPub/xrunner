@@ -234,6 +234,12 @@ Function RunCmd( bat, param )
     objShell.run(cmdline)
 End Function
 
+Function RunCmd2( bat, param1, param2 )
+    'writeProjIni projIni,"variables",styleout
+    cmdline = """%comspec%"" /c " & "cmd.exe /c " & bat & " " & param1 & " " & param2
+    objShell.run(cmdline)
+End Function
+
 Function buttonShow(file)
   dim x, group, grplen, buttonlen
   For x = 0 To Ubound(tskgrp)
@@ -317,10 +323,10 @@ Sub RunScript(script,var1,var2,var3,var4,var5)
     'CmdPrompt(cmdline)
 End Sub
 
-Sub editFileExternal(file)
+Function editFileExternal(file)
     cmdline = texteditor & " " & file
     objShell.run(cmdline)
-End Sub
+End Function
 
 Sub editFileWithProgram(file,program)
     cmdline = dquote & program & dquote & " " & file
