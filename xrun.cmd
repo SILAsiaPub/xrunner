@@ -55,7 +55,13 @@ goto :eof
   set text=%~1
   set text=%text:'="%
   set outfile=%~2
-  echo %text% >> "%outfile%"
+  set first=%~3
+  if defined first (
+   echo %text%> "%outfile%"
+  ) else (
+  echo %text%>> "%outfile%"
+  )
+  set first=
   @call :funcend %0
 goto :eof
 
@@ -73,13 +79,35 @@ goto :eof
   set %outvar%=%appendparam%
 goto :eof
 
+:autoit
+:: Description: Pass a script and variables to autoit.
+::Usage: call :autoit script.au3 infile outfile parm1 etc
+  if defined fatal goto :eof
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  call :inccount %count%
+  set script=%~1
+  if not defined script call :fatal %0 "Autoit script not supplied!" & goto :eof
+  if not exist "%scripts%\%script%" call :scriptfind "%script%" %0
+  set parm1=%~2
+  if not exist "%autoit%" call :fatal %0 "missing autoit3.exe executable file" & goto :eof
+  set parm2=%~3
+  if defined fatal goto :eof
+  set curcommand="%autoit%" "%script%" "%parm1%" "%parm2%"
+  @if defined info2 echo %curcommand%
+  pushd "%scripts%"
+  call %curcommand%
+  popd
+  @if defined unittest set utreturn=%ccw32%, %cctparam%, %script%, %infile%, %outfile%
+  @call :funcend %0
+goto :eof
+
 :calc
 :: Description: Calculate an number and return in a variable.
 :: Usage: call :calc varname numbcalcstring
   @call :funcbegin %0 "'%~1' '%~2'"
-  set /A %~1=%~2
-  echo !%~1!
-  Pause
+  set /A numb=%~2
+  echo calculated number = %numb%
+  set %~1=%numb%
   @call :funcend %0
 goto :eof
 
@@ -114,7 +142,7 @@ goto :eof
   call :outfile "%~3" "%projectpath%\tmp\%group%-%count%-%scriptout%.xml"
   if defined fatal goto :eof
   set curcommand="%ccw32%" %cctparam% -t "%script%" -o "%outfile%" "%infile%"
-  @if defined info2 echo. & echo %curcommand%
+  @if defined info2 echo %curcommand%
 
   pushd "%scripts%"
   call %curcommand%
@@ -213,9 +241,11 @@ goto :eof
   call :inccount
   set command=%~1
   set out=%~2
-  if not defined command echo Info: missing command
-  if not defined command if not defined info4 echo %funcendtext% %0 
-  if not defined command goto :eof
+  if not defined command (
+    echo Info: missing command
+    if defined info4 echo %funcendtext% %0 
+    goto :eof
+    )
   call :outfile "%out%" "%projectpath%\xml\%group%-%count%--command2file.xml"
   set commandpath=%~3
   set append=%~4
@@ -417,9 +447,9 @@ goto :eof
 :: Description: Echo a message
 :: Usage: call :echo "message text"
   if "%~1" == "." (
-    echo.
+    @echo.
   ) else (
-    echo %~1
+    @echo %~1
   )
 goto :eof
 
@@ -438,12 +468,12 @@ call :infile "%testfile%"
 set nameext=%~nx1
 FOR /F "usebackq tokens=1-2" %%A IN (`%encodingchecker% --mime-encoding "%infile%"`) DO set fencoding=%%B
 if defined validateagainst (
-    if "%fencoding%" == "%validateagainst%"  ( echo %green%%nameext% encoding is: %fencoding% %reset% 
+    if "%fencoding%" == "%validateagainst%"  ( echo Encoding check: %green%%nameext% is %fencoding% %reset% 
     ) else (
-    if "%fencoding%" == "us-ascii" ( echo %green%%nameext% encoding is: %fencoding% -- OK. %reset% &  goto :eof  
+    if "%fencoding%" == "us-ascii" ( echo Encoding check: %green%%nameext% is %fencoding% -- OK. %reset% &  goto :eof  
       ) else (
-        echo %redbg% File %nameext% encoding is %fencoding%! %reset% 
-        echo %redbg% Encoding is: %fencoding%  But it was expected to be: %validateagainst%. %reset%
+        echo Encoding check:  %redbg%%nameext% is  %fencoding%! %reset% 
+        echo %redbg% But it was expected to be: %validateagainst%. %reset%
         set errorsuspendprocessing=on
       )
       )
@@ -496,7 +526,6 @@ goto :eof
   set functest=%~1
   set alttext=%~2
   if not defined alttext set alttext=Output:
-  @if defined info2 if exist "%outfile%" echo.
   @if defined info1 if exist "%outfile%" echo %green%%alttext% %outfile% %reset%
   @if defined info1 if exist "%outfile%" set utret3=Output: %outfile%
   @if defined outfile if not exist "%outfile%" Echo %redbg%Task failed: Output file not created! %reset%
@@ -505,6 +534,7 @@ goto :eof
   @if not defined info4 set utret5=
   @if defined info4 set utret5=%funcendtext% %functest%
   @if defined outfile if not exist "%outfile%" set skiptasks=on  & if not defined unittest pause
+  @if defined info2 if exist "%outfile%" echo.
   @if defined unittest set utreturn= %functest%, %info1%, %info4%, %utret3%, %utret4%, %utret5%
   @call :funcend  %0
 @goto :eof
@@ -516,7 +546,8 @@ goto :eof
   @if defined info4 echo %funcendtext% %func%
   @if defined %func:~1%pause pause
   @rem the following form of %func:~1% removes the colon from the begining of the func.
-  @if defined !func:~1!echo echo ========= !func:~1!echo switched OFF =========& echo off
+  @if defined !func:~1!show @echo off
+  @if defined !func:~1!show echo ========= !func:~1!echo switched OFF =========
 @goto :eof
 
 :iconv
@@ -545,7 +576,59 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
+:ifnotdefined
+:: Description: Checks if true
+:: Usage: call :ifnotdefined action par1 par 2 par3 par4
+:: action note: the action can be a function or a taskgroup NOT a dos command
+  set varname=%~1
+  set action=%~2
+  set par1=%~3
+  set par2=%~4
+  set par3=%~5
+  set par4=%~6
+  set firstact=%action:~0,1%
+  if not defined %varname% (
+    @if defined info2 echo Test: TRUE - variable %~1 is not defined
+    if ~%firstact% neq ~: (
+      @if defined info3 echo call :taskgroup %action%  "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%" 
+      call :taskgroup %action% "%par1%" "%par2%" "%par3%" "%par4%" 
+    ) else (
+      @if defined info3 echo call %action% "%actpar1%" "%actpar2%" "%actpar3%" "%actpar4%"
+      call %action% "%par1%" "%par2%" "%par3%" "%par4%"
+    )
+  ) else (
+    @if defined info2 echo Test: FALSE - variable %~1 is defined
+  )
+goto :eof
+
+:ifdefined
+:: Description: Checks for value in variable
+:: Usage: call :ifdefined variablename action
+:: action note: the action can be a function or a taskgroup not a dos command
+:: Depends on: 
+  set varname=%~1
+  set action=%~2
+  set par1=%~3
+  set par2=%~4
+  set par3=%~5
+  set par4=%~6
+  set firstact=%action:~0,1%
+  if defined %varname% (
+    @if defined info2 echo Test: TRUE - variable %~1 is defined
+    if ~%firstact% neq ~: (
+      @if defined info3 echo call :taskgroup %action%  "%par1%" "%par2%" "%par3%" "%par4%" 
+      call :taskgroup %action% "%par1%" "%par2%" "%par3%" "%par4%" 
+    ) else (
+      @if defined info3 echo call %action% "%par1%" "%par2%" "%par3%" "%par4%"
+      call %action% "%par1%" "%par2%" "%par3%" "%par4%"
+    )
+  ) else (
+    @if defined info2 echo Test: FALSE - variable %~1 is not defined
+  )
+goto :eof
+
 :ifequal
+:: action note: the action can be a function or a taskgroup not a dos command
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6' '%~7' '%~8'"
   set t1=%~1
   set t2=%~2
@@ -580,6 +663,7 @@ goto :eof
 goto :eof
 
 :ifnotequal
+:: action note: the action can be a function or a taskgroup not a dos command
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
   set t1=%~1
   set t2=%~2
@@ -596,9 +680,10 @@ goto :eof
 goto :eof
 
 :ifexist
-:: Description:
-:: Usage: call :ifexist testfile action 
-:: Depends on: inccount
+:: Description: tests if a file exists
+:: Usage: call :ifexist testfile action par*
+:: action note: the action can be a dos command or call a xrun function or call a project taskgroup
+:: Depends on: inccount funcbegin funcend
   if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
   set testfile=%~1
@@ -610,20 +695,26 @@ goto :eof
   call :inccount
   if not defined testfile echo Error:  missing testfile parameter& echo %funcendtext% %0 error1 & goto :eof
   if not defined param2 echo Error: missing action param2& echo %funcendtext% %0 error2 & goto :eof
-  set appendparam=
-  set numbparam=
-  for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
+  rem set appendparam=
+  rem set numbparam=
+  rem for /L %%v in (3,1,9) Do call :appendnumbparam numbparam param %%v
   for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
-  if not exist "%testfile%" if defined info3 echo Info: testfile %~nx1 does not exist. No action %param2% taken
-  if exist "%testfile%" if defined info3 echo %param2% %param3% %param4% %param5%
-  if exist "%testfile%" %param2% %param3% %param4% %param5% 
+  rem set actionfirstlet=%param2:~0,1%
+  if exist "%testfile%" (
+    if defined info2 echo Test: TRUE   %~nx1 does exist. 
+    if defined info3 echo %param2% %param3% %param4% %param5% %param6%
+    %param2% %param3% %param4% %param5% %param6%     
+  ) else (
+    if defined info2 echo Test: FALSE  %~nx1 does not exist. No action taken.
+  )
   @if defined unittest set utreturn=%testfile%, %param2%, %param3%, %param4%, %param5%, %param6%
   @call :funcend %0
 goto :eof
 
 :ifnotexist
 :: Description: If a file or folder do not exist, then performs an action.
-:: Usage: call :ifnotexist testfile action 
+:: Usage: call :ifnotexist testfile action parm*
+:: action note: the action can be a dos command or call a xrun function or call a project taskgroup
 :: Depends on: inccount
   if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3' '%~4' '%~5' '%~6'"
@@ -633,17 +724,27 @@ goto :eof
   set param4=%~4
   set param5=%~5
   set param6=%~6
+  set filename=%~nx1
   call :inccount
   rem echo on
   if not defined testfile echo missing testfile parameter & echo %funcendtext% %0  & goto :eof
   if not defined param2 echo missing action param2 parameter & echo %funcendtext% %0  & goto :eof
-  set appendparam=
-  set numbparamine=
-  set numbparam=
-  for /L %%v in (3,1,9) Do call :appendnumbparam numbparamine param %%v
+  rem set appendparam=
+  rem set numbparamine=
+  rem set numbparam=
+  rem for /L %%v in (3,1,9) Do call :appendnumbparam numbparamine param %%v
+  for /L %%v in (2,1,6) Do if defined param%%v if "!param%%v!" neq "!param%%v: =!" set param%%v="!param%%v!"
   set action=%param2:'="%
-  @if defined info3 echo if not exist "%testfile%" %param2% %numbparamine%
-  if not exist "%testfile%" %param2% %numbparamine%
+  rem @if defined info3 echo if not exist "%filename%" %param2% %numbparamine%
+  rem if not exist "%testfile%" %param2% %numbparamine%
+  set firstact=%param2:~0,1%
+  if not exist "%testfile%" (
+    if defined info2 echo Test: TRUE   %filename% does not exist. 
+      if defined info3 echo %param2% %param3% %param4% %param5% %param6%
+      %param2% %param3% %param4% %param5% %param6% 
+  ) else (
+    if defined info2 echo Test: FALSE   %~nx1 does exist. No action %param2% taken.
+  )
   rem echo off
   @if defined unittest set utreturn=%testfile%, %action%, %param3%, %param4%, %param5%, %param6%
   @call :funcend %0
@@ -930,7 +1031,6 @@ goto :eof
         FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n "%filespec%"') DO  call %grouporfunc% "%%s" %numbparam%
       ) else (
         FOR /F " delims=" %%s IN ('dir /b /a:-d /o:n "%filespec%"') DO  call :taskgroup %grouporfunc% "%%s" %numbparam%
-  )  
     )  
   )  
   @if defined unittest set utreturn= %filespec%, %sub%, %numbparam%, %last%
@@ -962,7 +1062,7 @@ goto :eof
   if not defined listfile echo %error% Missing list-file parameter[1]%reset%
   if not defined listfile if defined info4 echo %funcendtext% %0 
   if not defined listfile goto :eof
-  if not exist "%listfile%" echo %error% Missing source files %reset%
+  if not exist "%listfile%" echo %error% Missing source: %listfile% %reset%
   if not exist "%listfile%" if defined info4 echo %funcendtext% %0 
   if not exist "%listfile%" goto :eof
   for /L %%v in (3,1,9) Do call :appendnumbparam numbparam par %%v
@@ -1063,18 +1163,11 @@ goto :eof
   @call :funcend :main
   rem if defined pauseatend call :exit-prompt
   @if %infolevel% == 4 echo on
-  set esec=%time:~6,2%
-  set emin=%time:~3,2%
-  set ehr=%time:~0,2%
-  if "%esec:~0,1%" == "0" set esec=%esec:~1,1%
-  if "%emin:~0,1%" == "0" set esec=%emin:~1,1%
-  if "%ehr:~0,1%" == "0" set ehr=%ehr:~1,1%
-  set /a ehrseconds=%ehr% * 60 * 60
-  set /a endseconds=(%emin% * 60) + %esec% + %ehrseconds%
-  rem echo esec=%esec% emin=%emin% endseconds=%endseconds%
-  set /a elapsed=%endseconds%-%beginseconds%
-  @if %infolevel% == 4 echo off
-  @echo Completed in %elapsed% seconds at %time:~0,8%
+  call :time2sec endtime
+  set /A sec=%endtime%-%starttime%
+  rem call :sec2time elapsed %sec%
+  @if %infolevel% == 4 @echo off
+  @echo Completed in %sec% seconds at %time:~0,8%
   if defined pauseatend pause
 goto :eof
 
@@ -1128,6 +1221,7 @@ goto :eof
   set defaultoutdp=%~dp2
   set defaultoutnx=%~nx2
   set outpath=%~dp1
+  set outpath=%outpath:~-1%
   rem the folloing is to preserve wildcards in the outfile. Since *.* when using %~nx1 becomes . not *.*
   @if defined info4 set outnx
   @if defined info4 set defaultoutfile
@@ -1150,7 +1244,7 @@ goto :eof
 
 :outputfile
 :: Description: Copies last out file to new name. Used to make a static name other tasklists can use.
-:: Usage: :outputfile drive:\path\file.ext [start] [validate] 
+:: Usage: :outputfile drive:\path\file.ext [start] [validate] [copy]
 :: Depends on: checkdir, funcend, validate
   if defined fatal goto :eof
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
@@ -1158,10 +1252,15 @@ goto :eof
   set outfile=%~1
   set var2=%~2
   set var3=%~3
+  set var4=%~4
   if defined var2 set %var2%=%~1
   if defined fatal goto :eof
   call :checkdir "%outfile%"
-  move /Y "%infile%" "%outfile%" >> log.txt
+  if not defined var4 (
+    move /Y "%infile%" "%outfile%" >> log.txt
+  ) else ( 
+    call :copy "%infile%" "%outfile%"
+  )
   if "%var2%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var3%" == "start" if exist "%outfile%" start "" "%outfile%"
   if "%var2%" == "validate" call :validate "%outfile%"
@@ -1221,6 +1320,19 @@ goto :eof
   @call :funcendtest %0
 goto :eof
 
+:prerender
+:: Description: Prerenders HTML with JS into plain HTML
+:: Usage: call :prerender url outpath
+:: Depends on: inccount, infile, outfile, funcend
+:: External program: chrome.exe 
+:: Required variable: chrome outpath
+  @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  set url=%~1
+  set filename=%~nx1
+  set outpath=%~2
+  call :command2file "'%chrome%' --headless --dump-dom --disable-gpu %url%" "%outpath%\%filename%"
+  @call :funcend %0
+goto :eof
 
 :prince
 :: Description: Make PDF using PrinceXML
@@ -1487,21 +1599,16 @@ goto :eof
       chcp 65001
       )
   @call :funcbegin %0 "'%~1' '%~2' '%~3'"
+  set /A sph=60*60
+  set /A spm=60
   set redbg=[101m
   set magentabg=[105m
   set green=[32m
   set reset=[0m
   if %infolevel% == 4 echo on
-  set bsec=%time:~6,2%
-  set bmin=%time:~3,2%
-  set bhr=%time:~0,2%
-  @echo Start time: %time:~0,8%
-  if "%bsec:~0,1%" == "0" set bsec=%bsec:~1,1%
-  if "%bmin:~0,1%" == "0" set bsec=%bmin:~1,1%
-  if "%bhr:~0,1%" == "0" set bhr=%bhr:~1,1%
-  set /a bhrseconds=%bhr% * 60 * 60
-  set /a beginseconds=(%bmin% * 60) + %bsec% + %bhrseconds%
-  if %infolevel% == 4 echo off
+  call :time2sec starttime
+  @echo Xrunner Started: %time:~0,8%
+  if %infolevel% == 4 @echo off
   rem echo bsec=%bsec% bmin=%bmin% bginseconds=%beginseconds%
   rem the following line cleans up from previous runs.
   if not defined unittest if exist scripts\*.xrun del scripts\*.xrun
@@ -1515,7 +1622,8 @@ goto :eof
   call :variableslist "setup\xrun.ini"
   call :detectdateformat
   call :setup-%setup-type%
-  @if defined info0 echo Setup: complete
+  @if defined info2 echo Setup: %green%complete%reset%
+  @echo.
   set /A count=0
   rem set utreturn=%scripts%
   @call :funcend %0
@@ -1884,7 +1992,7 @@ goto :eof
       rem echo on
       if "!utreturn%%n!" == "!expect%%n!" set t=!t!0
       if "!utreturn%%n!" neq "!expect%%n!"  set t=!t!1
-      echo off
+      rem echo off
       )
   ) 
   set tword=passed & color 07
@@ -1929,6 +2037,25 @@ goto :eof
     set curhh_mm_ss=%%A:%%B:%%C
   )
   @call :funcend %0
+goto :eof
+
+:time2sec
+set varname=%~1
+for /F "tokens=1-3 delims=:.," %%a in ("%TIME%") do (
+	set /A "%varname%=(1%%a*%sph%-100)+(1%%b*%spm%-100)+(1%%c-100)
+)
+goto :eof
+
+:sec2time
+set /A hh=%~2/%sph%
+set /A sh=%hh%*%sph%
+set /A mm=(%~2-%sh%)/%spm%
+set /A sm=%mm%*%spm%
+set /A ss=(%~2 - %sh% - %sm%) 
+if %hh% lss 10 set hh=0%hh%
+if %mm% lss 10 set mm=0%mm%
+if %ss% lss 10 set ss=0%ss%
+set %~1=%hh%:%mm%:%ss%
 goto :eof
 
 :unittest
@@ -2110,7 +2237,6 @@ goto :eof
   if defined missinginput call :fatal %0 "infile not found!"
   if defined params set params=%params:'="%
   if defined fatal goto :eof
-  @if defined info2 echo.
   if "%xslt%" == "xslt1" (
     @if defined info2 echo %xml% tr "%script%" "%infile%" ^> "%outfile%"
     call "%xml%" tr "%script%" "%infile%" > "%outfile%" 
