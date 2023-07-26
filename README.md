@@ -1,9 +1,11 @@
-# Xrunner2
+# ![xrunner icon](setup/xslt.ico) Xrunner2
 
 Xrunner2 is a GUI to run projects that would be batch files, that may be simple transformations or complex projects. It is designed to have simpler and more consistent syntax than batch files and command line tools. 
 ```
 :funcname inputfile outputfile parameters
 ```
+When it open it looks like this when no project is loaded.
+![Open Xrunner.hta](docs/xrunner2-open.png)
 
 While is was originally created to run XSLT trnasformation using Saxon, it can also run any command line tool. Xrunner2 only prepares for XSLT transformations when needed, thus making it faster to startup. Inspired by Vimod-Pub but simpler to setup. 
 
